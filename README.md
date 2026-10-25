@@ -3,7 +3,7 @@
 ## Publicar en GitHub Pages
 1. Crea un repositorio nuevo (por ejemplo `liquida`) y sube todo el contenido de esta carpeta a la raíz.
 2. En el repositorio: Settings → Pages → Source: "Deploy from a branch" → rama `main`, carpeta `/ (root)`.
-3. La dirección será `https://rbc01-source.github.io/liquida/`.
+3. La dirección será `https://TU-USUARIO.github.io/liquida/`.
 
 ## Antes de publicar (config.json, en el proyecto que genera el sitio)
 - `base_url`: tu dirección final (afecta sitemap y canonical).

@@ -134,6 +134,13 @@ svg{display:block}
 .src a{color:var(--ink);text-underline-offset:3px;font-weight:600;overflow-wrap:anywhere}
 @media (max-width:420px){ .grid2{grid-template-columns:1fr} .band .v{font-size:1.75rem} }
 @media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important} }
+@media print{
+  body{background:#fff;color:#000;padding:0}
+  .nav,.pchip,.disc,#formcard,.noprint,.toast,.sheet-wrap,[data-act=copy]{display:none!important}
+  body.print-plan .wrap > *:not(.keep):not(.top){display:none!important}
+  body.print-res #res .btn,body.print-res #res .grid2{display:none!important}
+  .card{box-shadow:none}
+}
 
 .site{max-width:680px;margin:0 auto;padding-bottom:48px}
 .site .top a{color:inherit;text-decoration:none}
@@ -363,6 +370,28 @@ const ICON = {
   copy: '<svg class="i" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>',
   lock: '<svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>'
 };
+function siteMode() { return !!window.LIQUIDA_CFG; }
+function csvCell(v) { v = String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+function downloadCSV(name, rows) {
+  const text = '\uFEFF' + rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n');
+  try {
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 500);
+    toast('Archivo descargado');
+  } catch (e) { toast('No se pudo descargar'); }
+}
+function printView(cls) {
+  document.body.classList.add(cls);
+  const off = function () { document.body.classList.remove(cls); window.removeEventListener('afterprint', off); };
+  window.addEventListener('afterprint', off);
+  try { window.print(); } catch (e) { off(); }
+}
+function exportButtons(kind) {
+  if (!siteMode()) return '';
+  if (!S.premium) return '<button type="button" class="btn ghost block" data-act="prem">' + ICON.lock + ' Exportar a PDF y Excel (Premium)</button>';
+  return '<div class="grid2"><button type="button" class="btn ghost" data-act="csv-' + kind + '">Descargar Excel (CSV)</button><button type="button" class="btn ghost" data-act="pdf-' + kind + '">Guardar como PDF</button></div>';
+}
 const CALCS = [
   { id: 'grati', n: 'Gratificación' }, { id: 'cts', n: 'CTS' }, { id: 'vac', n: 'Vacaciones' },
   { id: 'liq', n: 'Liquidación' }, { id: 'hon', n: 'Honorarios' }, { id: 'neto', n: 'Sueldo neto' }
@@ -502,12 +531,14 @@ function resultHTML() {
   r.notes.forEach(function (n) { h += '<div class="note">' + ICON.info + '<span>' + esc(n) + '</span></div>'; });
   const text = [CALCS.filter(function (c) { return c.id === S.calc; })[0].n + ' — ' + r.band.l + ': ' + fmt(r.band.v)].concat(r.rows.map(function (x) { return x[0] + ': ' + fmt(x[1]); })).concat(['(Cálculo referencial, Liquida)']).join('\n');
   S.copyText = text;
-  h += '<button type="button" class="btn ghost block" data-act="copy">' + ICON.copy + ' Copiar resumen</button>';
+  S.csvRows = [['Liquida', CALCS.filter(function (c) { return c.id === S.calc; })[0].n], ['Fecha', new Date().toLocaleDateString('es-PE')], ['Concepto', 'Monto (S/)']]
+    .concat(r.rows.map(function (x) { return [x[0], Number(x[1]).toFixed(2)]; })).concat([[r.total[0], Number(r.total[1]).toFixed(2)], ['Cálculo referencial, no es asesoría legal ni financiera']]);
+  h += '<button type="button" class="btn ghost block" data-act="copy">' + ICON.copy + ' Copiar resumen</button>' + exportButtons('res');
   return h;
 }
 
 function calcView() {
-  let h = '<section class="card"><div class="seg" role="tablist" aria-label="Calculadoras">';
+  let h = '<section class="card" id="formcard"><div class="seg" role="tablist" aria-label="Calculadoras">';
   CALCS.forEach(function (c) { h += '<button type="button" role="tab" data-act="calc" data-v="' + c.id + '" aria-selected="' + (S.calc === c.id) + '">' + c.n + '</button>'; });
   h += '</div><div id="form" style="display:grid;gap:14px">' + formHTML() + '</div></section>';
   h += '<section class="card" id="res" aria-live="polite">' + resultHTML() + '</section>';
@@ -517,6 +548,27 @@ function teamStats(w) {
   const o = { sueldo: w.sueldo, asig: w.asig, varProm: 0, reg: w.reg };
   const g = gratificacion(Object.assign({ meses: 6, eps: false }, o)), c = cts(Object.assign({ meses: 6, dias: 0, gratiLast: '' }, o));
   return { g: g.total, c: c.total };
+}
+function planRows() {
+  const pen = S.f.pension, afp = Number(S.f.afpPct) || 0;
+  const rows = S.workers.map(function (w) {
+    const st = teamStats(w);
+    const n = sueldoNeto({ sueldo: w.sueldo, asig: w.asig, varProm: 0, reg: w.reg, pension: pen, afpPct: afp });
+    return { name: w.name, reg: REG[w.reg].n, sueldo: w.sueldo, bruto: n.comp, pen: n.pen, ret: n.ret, neto: n.neto, g: st.g, c: st.c };
+  });
+  return rows;
+}
+function planillaHTML() {
+  const rows = planRows(); let t = { bruto: 0, pen: 0, ret: 0, neto: 0, g: 0, c: 0 };
+  let h = '<section class="card keep" id="plan"><h2>Planilla del mes</h2><p class="sub">Calculada con el sistema de pensiones elegido en «Sueldo neto» (' + (S.f.pension === 'onp' ? 'ONP 13%' : S.f.pension === 'afp' ? 'AFP ' + (Number(S.f.afpPct) || 0) + '%' : 'sin pensión') + ').</p><div class="tbl">';
+  rows.forEach(function (r) {
+    ['bruto', 'pen', 'ret', 'neto', 'g', 'c'].forEach(function (k) { t[k] += r[k]; });
+    h += '<div class="tr"><span>' + esc(r.name) + '<br><small class="fine">Bruto ' + fmt(r.bruto) + ' · Pensión ' + fmt(r.pen) + ' · 5.ª ' + fmt(r.ret) + '</small></span><span class="num">' + fmt(r.neto) + '</span></div>';
+  });
+  h += '<div class="tr tot"><span>Neto total a pagar</span><span class="num">' + fmt(r2(t.neto)) + '</span></div></div>' +
+    '<p class="fine">Provisión mensual aproximada de gratificación y CTS (1/6 de cada semestre): ' + fmt(r2((t.g + t.c) / 6)) + '</p>' +
+    '<div class="grid2 noprint"><button type="button" class="btn ghost" data-act="csv-plan">Descargar Excel (CSV)</button><button type="button" class="btn ghost" data-act="pdf-plan">Guardar como PDF</button></div></section>';
+  return h;
 }
 function teamView() {
   let h = '<section class="card"><div><h2>Mi equipo</h2><p class="sub">Guarda a tus trabajadores y calcula sus beneficios con un toque.</p></div><div class="wlist">';
@@ -529,6 +581,9 @@ function teamView() {
   });
   h += '</div><button type="button" class="btn block" data-act="addw">Agregar trabajador</button>' +
     '<p class="fine center">' + (S.premium ? 'Premium: trabajadores ilimitados' : 'Gratis: ' + S.workers.length + ' de 3 trabajadores') + '</p></section>';
+  if (S.premium && siteMode() && S.workers.length) {
+    h += planillaHTML();
+  }
   if (S.premium) {
     h += '<section class="card"><h2>Costo de planilla por semestre</h2><div class="tbl"><div class="tr"><span>Gratificaciones (con bonif.)</span><span class="num">' + fmt(r2(tg)) + '</span></div>' +
       '<div class="tr"><span>CTS</span><span class="num">' + fmt(r2(tc)) + '</span></div><div class="tr tot"><span>Total estimado</span><span class="num">' + fmt(r2(tg + tc)) + '</span></div></div></section>';
@@ -567,7 +622,7 @@ function openSheet(html) { sheet.innerHTML = '<div class="sheet" role="dialog" a
 function closeSheet() { sheet.hidden = true; sheet.innerHTML = ''; }
 function openPremium() {
   openSheet('<div class="sh-top"><h2>Liquida Premium</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>' +
-    '<ul class="list"><li>' + ICON.check + '<span>Trabajadores ilimitados (gratis: hasta 3)</span></li><li>' + ICON.check + '<span>Indemnización por despido arbitrario en la liquidación</span></li><li>' + ICON.check + '<span>Totales de planilla por semestre</span></li></ul>' +
+    '<ul class="list"><li>' + ICON.check + '<span>Trabajadores ilimitados (gratis: hasta 3)</span></li><li>' + ICON.check + '<span>Indemnización por despido arbitrario en la liquidación</span></li><li>' + ICON.check + '<span>Totales de planilla por semestre</span></li>' + (siteMode() ? '<li>' + ICON.check + '<span>Exportar a PDF y Excel, y planilla del mes para tu equipo</span></li>' : '') + '</ul>' +
     '<div class="plans"><button type="button" class="plan" data-act="plan" data-v="mensual" aria-pressed="' + (S.plan === 'mensual') + '"><span>Mensual</span><b>S/ 9.90</b></button><button type="button" class="plan" data-act="plan" data-v="anual" aria-pressed="' + (S.plan === 'anual') + '"><span>Anual</span><b>S/ 79</b><em>Ahorra 33%</em></button></div>' +
     (!S.premium && window.LIQUIDA_CFG ? '<div class="fld"><label for="p-mail">Tu correo (te avisamos cuando abra la suscripción)</label><input id="p-mail" type="email" autocomplete="email" placeholder="tucorreo@ejemplo.com"></div>' : '') + (S.premium ? '<button type="button" class="btn ghost block" data-act="unprem">Volver al plan gratis</button>' : '<button type="button" class="btn block" data-act="goprem">Probar Premium y reservar mi lugar</button>') +
     '<p class="fine center">Aún no hay cobro: activas Premium de prueba y registramos tu interés en el plan elegido para avisarte cuando abra la suscripción.</p>');
@@ -607,6 +662,15 @@ function onClick(e) {
   else if (a === 'calc') { S.calc = v; save(); render(); }
   else if (a === 'modo') { S.f.modo = v; save(); render(); }
   else if (a === 'copy') copy(S.copyText || '');
+  else if (a === 'csv-res') downloadCSV('liquida-' + S.calc + '.csv', S.csvRows || []);
+  else if (a === 'pdf-res') printView('print-res');
+  else if (a === 'csv-plan') {
+    const rows = [['Liquida - Planilla del mes'], ['Fecha', new Date().toLocaleDateString('es-PE')], ['Trabajador', 'Régimen', 'Remuneración bruta', 'Pensión', 'Retención 5.ª categoría', 'Neto mensual', 'Gratificación semestral', 'CTS semestral']];
+    planRows().forEach(function (r) { rows.push([r.name, r.reg, r.bruto.toFixed(2), r.pen.toFixed(2), r.ret.toFixed(2), r.neto.toFixed(2), r.g.toFixed(2), r.c.toFixed(2)]); });
+    rows.push(['Cálculo referencial, no es asesoría legal ni financiera']);
+    downloadCSV('liquida-planilla.csv', rows);
+  }
+  else if (a === 'pdf-plan') printView('print-plan');
   else if (a === 'prem') openPremium();
   else if (a === 'plan') { S.plan = v; openPremium(); }
   else if (a === 'goprem') { const pm = document.getElementById('p-mail'); if (pm && pm.value) sendLead(pm.value.trim()); S.premium = true; recordInterest(); save(); closeSheet(); render(); toast('Premium activado (demo)'); }

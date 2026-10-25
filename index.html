@@ -134,6 +134,13 @@ svg{display:block}
 .src a{color:var(--ink);text-underline-offset:3px;font-weight:600;overflow-wrap:anywhere}
 @media (max-width:420px){ .grid2{grid-template-columns:1fr} .band .v{font-size:1.75rem} }
 @media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important} }
+@media print{
+  body{background:#fff;color:#000;padding:0}
+  .nav,.pchip,.disc,#formcard,.noprint,.toast,.sheet-wrap,[data-act=copy]{display:none!important}
+  body.print-plan .wrap > *:not(.keep):not(.top){display:none!important}
+  body.print-res #res .btn,body.print-res #res .grid2{display:none!important}
+  .card{box-shadow:none}
+}
 
 .site{max-width:680px;margin:0 auto;padding-bottom:48px}
 .site .top a{color:inherit;text-decoration:none}
