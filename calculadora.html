@@ -1,0 +1,645 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Calculadora de CTS, gratificación, vacaciones y liquidación en Perú | Liquida</title><meta name="description" content="Calcula CTS, gratificación, vacaciones, liquidación, honorarios y sueldo neto en Perú. Cálculos referenciales con las cifras de 2026.">
+<link rel="canonical" href="https://rbc01-source.github.io/liquida/calculadora.html"><meta property="og:title" content="Calculadora de CTS, gratificación, vacaciones y liquidación en Perú | Liquida"><meta property="og:description" content="Calcula CTS, gratificación, vacaciones, liquidación, honorarios y sueldo neto en Perú. Cálculos referenciales con las cifras de 2026."><meta property="og:type" content="website"><meta property="og:locale" content="es_PE">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Concept: a payroll ledger you can read at a glance. Paper-cool ground, bank-green ink,
+   one Peruvian red accent, and a pale-gold band that holds the number that matters. */
+:root{
+  --bg:#F0F4F2; --surface:#FFFFFF; --ink:#0E2420; --muted:#55706A; --line:#D3DEDA;
+  --accent:#B8232F; --on-accent:#FFFFFF;
+  --band:#FFEFB8; --on-band:#2A2100;
+  --ok:#17744F; --warn:#8F5200; --key:#E2EBE7;
+  --shadow:0 1px 0 rgba(14,36,32,.05), 0 10px 26px -16px rgba(14,36,32,.35);
+  --f-body:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1513; --surface:#12211E; --ink:#E7F1EE; --muted:#93AAA3; --line:#25403A;
+    --accent:#FF7079; --on-accent:#2B0A0D;
+    --band:#3B3213; --on-band:#FFF1C4;
+    --ok:#4FD1A2; --warn:#F0B35A; --key:#1B2F2A;
+    --shadow:0 1px 0 rgba(0,0,0,.4), 0 12px 28px -16px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1513; --surface:#12211E; --ink:#E7F1EE; --muted:#93AAA3; --line:#25403A;
+  --accent:#FF7079; --on-accent:#2B0A0D;
+  --band:#3B3213; --on-band:#FFF1C4;
+  --ok:#4FD1A2; --warn:#F0B35A; --key:#1B2F2A;
+  --shadow:0 1px 0 rgba(0,0,0,.4), 0 12px 28px -16px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{height:100%;box-sizing:border-box}
+body{min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  -webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+h1,h2,h3,p{margin:0}
+.wrap{max-width:560px;margin:0 auto;padding-bottom:40px}
+svg{display:block}
+.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600}
+
+/* ---------- header ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:18px 12px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.5rem;letter-spacing:-.04em}
+.brand small{display:block;font-weight:500;font-size:.78rem;letter-spacing:0;color:var(--muted);margin-top:-3px}
+.logo rect{fill:var(--accent)} .logo path{stroke:var(--on-accent);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.pchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:.78rem;font-weight:600;color:var(--muted)}
+.pchip b{color:var(--ink)}
+.nav{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--key);padding:4px;border-radius:14px;margin-bottom:14px}
+.nav button{min-height:42px;border-radius:10px;font-weight:700;font-size:.92rem;color:var(--muted)}
+.nav button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+
+/* ---------- cards & forms ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow);display:grid;gap:14px}
+.card + .card{margin-top:14px}
+.card h2{font-size:1.05rem;font-weight:800;letter-spacing:-.02em}
+.eyebrow{font-weight:700;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fld{display:grid;gap:5px;min-width:0}
+.fld label,.fld .l{font-size:.82rem;font-weight:700;color:var(--muted)}
+.fld input[type=text],.fld input[type=number],.fld input[type=date],.fld select{width:100%;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:0 12px;font-weight:600}
+.fld input.num{font-family:var(--f-mono)}
+.fld .hint{font-size:.76rem;color:var(--muted)}
+.chk{display:flex;gap:10px;align-items:center;min-height:44px;font-weight:600;font-size:.94rem}
+.chk input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.sub{color:var(--muted);font-size:.9rem}
+.fine{color:var(--muted);font-size:.8rem}
+.center{text-align:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;border-radius:12px;font-weight:700;background:var(--accent);color:var(--on-accent);transition:transform .08s, filter .15s}
+.btn:active{transform:scale(.98)} .btn:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.block{width:100%}
+.btn.sm{min-height:40px;padding:0 14px;font-size:.9rem}
+.btn:disabled{opacity:.45;cursor:default;filter:none}
+.link{color:var(--muted);text-decoration:underline;text-underline-offset:3px;font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:.78rem;font-weight:700;background:var(--key);color:var(--ink)}
+.chip.prem{background:var(--accent);color:var(--on-accent)}
+.seg{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.seg button{flex:none;min-height:38px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);font-weight:700;font-size:.88rem;color:var(--muted);background:var(--surface)}
+.seg button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+
+/* ---------- results ---------- */
+.band{background:var(--band);color:var(--on-band);border-radius:16px;padding:16px;display:grid;gap:4px}
+.band .l{font-weight:700;font-size:.82rem;opacity:.85}
+.band .v{font-family:var(--f-mono);font-weight:600;font-size:2rem;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums}
+.band .s{font-size:.86rem;opacity:.9}
+.tbl{display:grid;gap:0}
+.tr{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+.tr:last-child{border-bottom:0}
+.tr span:first-child{color:var(--muted);font-size:.92rem;min-width:0}
+.tr .num{white-space:nowrap}
+.tr.tot{font-weight:800}
+.tr.tot span:first-child{color:var(--ink);font-weight:800}
+.tr.neg .num{color:var(--accent)}
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:12px;background:var(--key);font-size:.86rem;color:var(--ink)}
+.note .i{flex:none;margin-top:2px;color:var(--warn)}
+.formula{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);background:var(--bg);border-radius:10px;padding:10px 12px;overflow-wrap:anywhere}
+.wlist{display:grid;gap:10px}
+.wrow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.wrow b{display:block}
+.wrow small{color:var(--muted)}
+.wrow .acts{display:flex;gap:6px}
+.disc{margin-top:18px;color:var(--muted);font-size:.78rem;text-align:center;display:grid;gap:8px;justify-items:center}
+
+/* ---------- sheets & toast ---------- */
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top, 0px) + 20px);transform:translate(-50%,-6px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:700;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .15s, transform .15s;z-index:60;max-width:calc(100vw - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.sheet-wrap{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:color-mix(in srgb, #050c0b 62%, transparent);animation:fade .15s}
+@keyframes fade{from{opacity:0}}
+.sheet{width:100%;max-width:560px;max-height:92%;overflow-y:auto;background:var(--surface);color:var(--ink);border-radius:22px 22px 0 0;padding:22px max(18px, env(safe-area-inset-left, 0px)) calc(22px + env(safe-area-inset-bottom, 0px));display:grid;gap:16px;animation:rise .22s ease-out}
+@keyframes rise{from{transform:translateY(30px);opacity:.4}}
+.sheet h2{font-weight:800;font-size:1.3rem;letter-spacing:-.03em;text-wrap:balance}
+.sh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.ib{width:44px;height:44px;border-radius:12px;display:grid;place-items:center}
+.ib:hover{background:var(--key)}
+.acts-col{display:grid;gap:10px}
+.list{display:grid;gap:10px;padding:0;margin:0;list-style:none}
+.list li{display:flex;gap:10px;align-items:flex-start}
+.list .i{color:var(--ok);margin-top:3px;flex:none}
+.plans{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.plan{border:2px solid var(--line);border-radius:14px;padding:12px;text-align:left;display:grid;gap:2px;background:var(--surface)}
+.plan[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent)}
+.plan b{font-family:var(--f-mono);font-size:1.1rem}
+.plan span{color:var(--muted);font-size:.82rem}
+.plan em{font-style:normal;font-weight:700;font-size:.74rem;color:var(--accent)}
+.src a{color:var(--ink);text-underline-offset:3px;font-weight:600;overflow-wrap:anywhere}
+@media (max-width:420px){ .grid2{grid-template-columns:1fr} .band .v{font-size:1.75rem} }
+@media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important} }
+
+.site{max-width:680px;margin:0 auto;padding-bottom:48px}
+.site .top a{color:inherit;text-decoration:none}
+.site nav.links{display:flex;gap:14px;flex-wrap:wrap;font-weight:700;font-size:.9rem}
+.site nav.links a{color:var(--muted);text-decoration:none}
+.site nav.links a:hover{color:var(--ink)}
+.hero{padding:26px 0 8px;display:grid;gap:14px}
+.hero h1{font-size:2.1rem;line-height:1.08;letter-spacing:-.04em;font-weight:800;text-wrap:balance}
+.hero p{color:var(--muted);font-size:1.05rem;max-width:34em}
+.hero .row{display:flex;gap:10px;flex-wrap:wrap}
+.site article{display:grid;gap:12px;margin-top:10px}
+.site article h1{font-size:1.9rem;line-height:1.1;letter-spacing:-.035em;font-weight:800;text-wrap:balance}
+.site article h2{font-size:1.15rem;font-weight:800;letter-spacing:-.02em;margin-top:10px}
+.site article p,.site article li{max-width:38em}
+.site article ul{padding-left:20px;display:grid;gap:6px;margin:0}
+.cta{background:var(--band);color:var(--on-band);border-radius:16px;padding:16px;display:grid;gap:10px;margin-top:14px}
+.cta b{font-size:1.05rem}
+.cta .btn{background:var(--ink);color:var(--bg);justify-self:start;text-decoration:none}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;text-decoration:none;color:var(--ink);display:grid;gap:4px;box-shadow:var(--shadow)}
+.tile b{font-weight:800}.tile span{color:var(--muted);font-size:.86rem}
+.lead{display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:18px;box-shadow:var(--shadow)}
+.lead h2{font-size:1.1rem;font-weight:800;margin:0}
+.lead .r{display:flex;gap:8px;flex-wrap:wrap}
+.lead input[type=email],.lead select{flex:1 1 180px;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:0 12px;font-weight:600}
+.lead .ok{color:var(--ok);font-weight:700}
+.foot{margin-top:28px;color:var(--muted);font-size:.8rem;display:grid;gap:6px}
+.foot a{color:var(--muted)}
+@media (max-width:420px){.tiles{grid-template-columns:1fr}.hero h1{font-size:1.75rem}}
+</style></head><body>
+
+<div class="wrap" id="app"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="sheet-wrap" id="sheet" hidden></div>
+
+<script>
+window.LIQUIDA_CFG={"endpoint": "https://formspree.io/f/mkjjodoz", "email": ""};
+/*PURE*/
+const RMV = 1230, UIT = 5500, ASIG = RMV * 0.10;
+const REG = {
+  general: { n: 'Régimen general', g: 1, c: 1, v: 30 },
+  pequena: { n: 'Pequeña empresa (REMYPE)', g: 0.5, c: 0.5, v: 15 },
+  micro:   { n: 'Microempresa (REMYPE)', g: 0, c: 0, v: 15 }
+};
+function r2(x) { return Math.round((x + 1e-9) * 100) / 100; }
+function parseD(s) { const p = s.split('-').map(Number); return { y: p[0], m: p[1], d: p[2] }; }
+// Tiempo entre dos fechas (ambas inclusive), meses de 30 días.
+function span(a, b) {
+  if (!a || !b || a > b) return { m: 0, d: 0 };
+  const A = parseD(a), B = parseD(b);
+  const e = new Date(Date.UTC(B.y, B.m - 1, B.d + 1));
+  const ey = e.getUTCFullYear(), em = e.getUTCMonth() + 1, ed = e.getUTCDate();
+  let m = (ey - A.y) * 12 + (em - A.m), d = ed - A.d;
+  if (d < 0) { m--; d += new Date(Date.UTC(ey, em - 1, 0)).getUTCDate(); }
+  if (d >= 30) { m++; d -= 30; }
+  if (m < 0) return { m: 0, d: 0 };
+  return { m: m, d: d };
+}
+function computable(o) { return (o.sueldo || 0) + (o.asig ? ASIG : 0) + (o.varProm || 0); }
+function gratificacion(o) {
+  const f = REG[o.reg], c = computable(o);
+  const base = c * f.g / 6 * o.meses;
+  const bon = base * (o.eps ? 0.0675 : 0.09);
+  return { comp: c, base: r2(base), bon: r2(bon), total: r2(base + bon) };
+}
+function cts(o) {
+  const f = REG[o.reg], c = computable(o);
+  const gl = (o.gratiLast === '' || o.gratiLast == null) ? c * f.g : Number(o.gratiLast);
+  const sexto = gl / 6, base = c + sexto;
+  const total = base * f.c * ((o.meses || 0) / 12 + (o.dias || 0) / 360);
+  return { comp: c, sexto: r2(sexto), base: r2(base), total: r2(total) };
+}
+function vacTrunca(o) {
+  const f = REG[o.reg], c = computable(o);
+  return r2(c * (f.v / 30) * ((o.meses || 0) / 12 + (o.dias || 0) / 360));
+}
+function liquidacion(o) {
+  const f = REG[o.reg], c = computable(o), C = parseD(o.cese);
+  let cs = C.m >= 11 ? C.y + '-11-01' : (C.m >= 5 ? C.y + '-05-01' : (C.y - 1) + '-11-01');
+  if (cs < o.ingreso) cs = o.ingreso;
+  const sc = span(cs, o.cese);
+  const ctsR = cts({ sueldo: o.sueldo, asig: o.asig, varProm: o.varProm, reg: o.reg, meses: sc.m, dias: sc.d, gratiLast: '' });
+  let gs = C.m >= 7 ? C.y + '-07-01' : C.y + '-01-01';
+  if (gs < o.ingreso) gs = o.ingreso;
+  const sg = span(gs, o.cese);
+  const gr = gratificacion({ sueldo: o.sueldo, asig: o.asig, varProm: o.varProm, reg: o.reg, meses: Math.min(6, sg.m), eps: o.eps });
+  const tot = span(o.ingreso, o.cese);
+  const years = Math.floor(tot.m / 12), rm = tot.m % 12;
+  const vt = r2(c * (f.v / 30) * (rm / 12 + tot.d / 360));
+  const vencidos = o.vencidos || 0;
+  const vv = r2(vencidos * c * (f.v / 30));
+  const items = [
+    { k: 'cts', l: 'CTS trunca (' + sc.m + ' m, ' + sc.d + ' d)', v: ctsR.total },
+    { k: 'gr', l: 'Gratificación trunca (' + Math.min(6, sg.m) + ' m)', v: gr.base },
+    { k: 'bon', l: 'Bonificación extraordinaria', v: gr.bon },
+    { k: 'vt', l: 'Vacaciones truncas (' + rm + ' m, ' + tot.d + ' d)', v: vt }
+  ];
+  if (vencidos > 0) {
+    items.push({ k: 'vv', l: 'Vacaciones vencidas no gozadas (' + vencidos + ')', v: vv });
+    items.push({ k: 'vi', l: 'Indemnización vacacional (' + vencidos + ')', v: vv });
+  }
+  let indem = 0;
+  if (o.despido) {
+    const frac = years + rm / 12 + tot.d / 360, diaria = c / 30;
+    if (o.reg === 'general') indem = Math.max(3 * c, Math.min(1.5 * c * frac, 12 * c));
+    else if (o.reg === 'pequena') indem = Math.min(20 * diaria * frac, 120 * diaria);
+    else indem = Math.min(10 * diaria * frac, 90 * diaria);
+    items.push({ k: 'ind', l: 'Indemnización por despido arbitrario', v: r2(indem) });
+  }
+  const total = r2(items.reduce(function (a, i) { return a + i.v; }, 0));
+  return { items: items, total: total, tenure: tot, years: years, comp: c };
+}
+function bracketTax(neta) {
+  const B = [[5, 0.08], [20, 0.14], [35, 0.17], [45, 0.20], [Infinity, 0.30]];
+  let prev = 0, tax = 0;
+  for (let i = 0; i < B.length; i++) {
+    const top = B[i][0] * UIT;
+    if (neta > prev) tax += (Math.min(neta, top) - prev) * B[i][1];
+    prev = top;
+  }
+  return tax;
+}
+function honorarios(monto, susp) {
+  const ret = (!susp && monto > 3000) ? r2(monto * 0.08) : 0;
+  const annual = monto * 12;
+  const neta = Math.max(0, annual - Math.min(annual * 0.2, 24 * UIT) - 7 * UIT);
+  const tax = r2(bracketTax(neta));
+  return { ret: ret, neto: r2(monto - ret), annual: annual, neta: r2(neta), tax: tax, mensual: r2(tax / 12) };
+}
+function sueldoNeto(o) {
+  const c = computable(o), f = REG[o.reg];
+  const anual = c * 12 + 2 * c * f.g * 1.09;
+  const neta = Math.max(0, anual - 7 * UIT);
+  const tax = bracketTax(neta), ret = r2(tax / 12);
+  const rate = o.pension === 'onp' ? 0.13 : (o.pension === 'afp' ? (o.afpPct || 0) / 100 : 0);
+  const pen = r2(c * rate);
+  return { comp: c, anual: r2(anual), neta: r2(neta), taxAnual: r2(tax), ret: ret, pen: pen, neto: r2(c - pen - ret) };
+}
+/*ENDPURE*/
+
+/* ------------------------------ UI ------------------------------ */
+const KEY = 'liquida.v1';
+const app = document.getElementById('app');
+const sheet = document.getElementById('sheet');
+const toastEl = document.getElementById('toast');
+function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+const today = new Date(), ago = new Date(today.getFullYear() - 2, today.getMonth(), 1);
+let S = {
+  plan: 'anual', premium: false, tab: 'calc', calc: 'grati', workers: [],
+  f: { sueldo: 2500, asig: false, varProm: 0, reg: 'general', eps: false, meses: 6, dias: 0, gratiLast: '',
+       modo: 'trunca', diasGoce: 15, ingreso: iso(ago), cese: iso(today), vencidos: 0, despido: false, monto: 5000, susp: false, pension: 'afp', afpPct: 12.5 }
+};
+try {
+  const j = JSON.parse(localStorage.getItem(KEY) || 'null');
+  if (j) { S.premium = !!j.premium; S.workers = Array.isArray(j.workers) ? j.workers : []; S.calc = j.calc || S.calc; Object.assign(S.f, j.f || {}); }
+} catch (e) {}
+let DB = null, UID = null, IS_OWNER = false, syncT = null;
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify({ premium: S.premium, workers: S.workers, f: S.f, calc: S.calc })); } catch (e) {}
+  if (DB && UID) {
+    clearTimeout(syncT);
+    syncT = setTimeout(function () {
+      DB.doc('data/users/' + UID + '/state').set({ premium: S.premium, workers: S.workers, savedAt: Date.now() }).catch(function () {});
+    }, 800);
+  }
+}
+function sendLead(email) {
+  const c = window.LIQUIDA_CFG;
+  if (!c || !c.endpoint || !email) return;
+  try {
+    fetch(c.endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({ email: email, plan: S.plan || 'anual', origen: 'calculadora' }) }).catch(function () {});
+  } catch (e) {}
+}
+function recordInterest() {
+  if (!DB || !UID) return;
+  DB.doc('interest/' + UID).set({ plan: S.plan || 'anual', at: Date.now() }).catch(function () {});
+}
+let STATS = null;
+function loadStats() {
+  if (!DB || !IS_OWNER) return;
+  DB.collection('interest').get().then(function (q) {
+    const c = { mensual: 0, anual: 0 };
+    q.docs.forEach(function (d) { const p = (d.data() || {}).plan; if (c[p] != null) c[p]++; });
+    STATS = c; if (S.tab === 'guide') render();
+  }).catch(function () {});
+}
+(async function initCloud() {
+  try {
+    if (!window.claude || !claude.use) return;
+    const u = await claude.use('user'), d = await claude.use('db');
+    if (!u || !d) return;
+    DB = d; UID = await u.id(); IS_OWNER = await u.isOwner();
+    const snap = await DB.doc('data/users/' + UID + '/state').get();
+    if (snap.exists) {
+      const c = snap.data() || {};
+      if (!S.workers.length && Array.isArray(c.workers)) S.workers = c.workers;
+      if (c.premium) S.premium = true;
+      try { localStorage.setItem(KEY, JSON.stringify({ premium: S.premium, workers: S.workers, f: S.f, calc: S.calc })); } catch (e) {}
+    }
+    render(); loadStats();
+  } catch (e) {}
+})();
+function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function fmt(n) {
+  const neg = n < 0, s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return (neg ? '-' : '') + 'S/ ' + s;
+}
+function toast(t) {
+  toastEl.textContent = t; toastEl.classList.add('on');
+  clearTimeout(toast.t); toast.t = setTimeout(function () { toastEl.classList.remove('on'); }, 2000);
+}
+function copy(text) {
+  const done = function () { toast('Resumen copiado'); };
+  const fb = function () {
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) { toast('No se pudo copiar'); }
+    ta.remove();
+  };
+  try { navigator.clipboard.writeText(text).then(done, fb); } catch (e) { fb(); }
+}
+const ICON = {
+  check: '<svg class="i" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>',
+  info: '<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+  close: '<svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  copy: '<svg class="i" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>',
+  lock: '<svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>'
+};
+const CALCS = [
+  { id: 'grati', n: 'Gratificación' }, { id: 'cts', n: 'CTS' }, { id: 'vac', n: 'Vacaciones' },
+  { id: 'liq', n: 'Liquidación' }, { id: 'hon', n: 'Honorarios' }, { id: 'neto', n: 'Sueldo neto' }
+];
+
+function fld(label, k, type, hint) {
+  type = type || 'number';
+  const num = type === 'number';
+  return '<div class="fld"><label for="f-' + k + '">' + label + '</label><input id="f-' + k + '" data-k="' + k + '" type="' + type + '"' +
+    (num ? ' inputmode="decimal" step="any" min="0" class="num"' : '') + ' value="' + esc(S.f[k]) + '">' +
+    (hint ? '<span class="hint">' + hint + '</span>' : '') + '</div>';
+}
+function chk(label, k, re) {
+  return '<label class="chk"><input type="checkbox" data-k="' + k + '"' + (re ? ' data-re="1"' : '') + (S.f[k] ? ' checked' : '') + '> ' + label + '</label>';
+}
+function regSel() {
+  let o = '';
+  Object.keys(REG).forEach(function (k) { o += '<option value="' + k + '"' + (S.f.reg === k ? ' selected' : '') + '>' + REG[k].n + '</option>'; });
+  return '<div class="fld"><label for="f-reg">Régimen laboral</label><select id="f-reg" data-k="reg">' + o + '</select></div>';
+}
+function workerPick() {
+  if (!S.workers.length) return '';
+  let o = '<option value="">— Elegir de mi equipo —</option>';
+  S.workers.forEach(function (w) { o += '<option value="' + w.id + '">' + esc(w.name) + '</option>'; });
+  return '<div class="fld"><label for="wp">Trabajador guardado</label><select id="wp" data-act-change="pick">' + o + '</select></div>';
+}
+function commonFields() {
+  return workerPick() +
+    '<div class="grid2">' + fld('Sueldo mensual (S/)', 'sueldo') + fld('Promedio de variables (S/)', 'varProm', 'number', 'Comisiones, horas extra…') + '</div>' +
+    chk('Recibe asignación familiar (S/ ' + ASIG.toFixed(2) + ')', 'asig') + regSel();
+}
+function monthsSel(k, max) {
+  let o = '';
+  for (let i = 0; i <= max; i++) o += '<option value="' + i + '"' + (Number(S.f[k]) === i ? ' selected' : '') + '>' + i + '</option>';
+  return o;
+}
+
+function formHTML() {
+  const f = S.f;
+  if (S.calc === 'grati') {
+    return commonFields() + '<div class="grid2"><div class="fld"><label for="f-meses">Meses completos del semestre</label><select id="f-meses" data-k="meses">' + monthsSel('meses', 6) + '</select></div>' +
+      '<div class="fld"><span class="l">Seguro de salud</span>' + chk('Tiene EPS (bonif. 6.75%)', 'eps') + '</div></div>';
+  }
+  if (S.calc === 'cts') {
+    return commonFields() + '<div class="grid2"><div class="fld"><label for="f-meses">Meses completos</label><select id="f-meses" data-k="meses">' + monthsSel('meses', 6) + '</select></div>' +
+      '<div class="fld"><label for="f-dias">Días adicionales</label><select id="f-dias" data-k="dias">' + monthsSel('dias', 29) + '</select></div></div>' +
+      fld('Última gratificación (S/, opcional)', 'gratiLast', 'number', 'Vacío = se calcula con el sueldo');
+  }
+  if (S.calc === 'vac') {
+    let h = commonFields() + '<div class="fld"><span class="l">¿Qué quieres calcular?</span><div class="seg" role="tablist">' +
+      '<button type="button" role="tab" data-act="modo" data-v="trunca" aria-selected="' + (f.modo === 'trunca') + '">Vacaciones truncas</button>' +
+      '<button type="button" role="tab" data-act="modo" data-v="goce" aria-selected="' + (f.modo === 'goce') + '">Pago por días a gozar</button></div></div>';
+    if (f.modo === 'trunca') {
+      h += '<div class="grid2"><div class="fld"><label for="f-meses">Meses (máx. 11)</label><select id="f-meses" data-k="meses">' + monthsSel('meses', 11) + '</select></div>' +
+        '<div class="fld"><label for="f-dias">Días adicionales</label><select id="f-dias" data-k="dias">' + monthsSel('dias', 29) + '</select></div></div>';
+    } else h += fld('Días de vacaciones a gozar', 'diasGoce');
+    return h;
+  }
+  if (S.calc === 'liq') {
+    return commonFields() + '<div class="grid2">' + fld('Fecha de ingreso', 'ingreso', 'date') + fld('Fecha de cese', 'cese', 'date') + '</div>' +
+      fld('Periodos de vacaciones vencidos no gozados', 'vencidos', 'number', 'Cada periodo vencido suma pago + indemnización') +
+      chk('Cese por despido arbitrario ' + (S.premium ? '' : '(Premium)'), 'despido', true) + chk('Tiene EPS (bonif. 6.75%)', 'eps');
+  }
+  if (S.calc === 'neto') {
+    const opt = function (v, t) { return '<option value="' + v + '"' + (f.pension === v ? ' selected' : '') + '>' + t + '</option>'; };
+    return commonFields() + '<div class="grid2"><div class="fld"><label for="f-pension">Sistema de pensiones</label><select id="f-pension" data-k="pension" data-re="1">' +
+      opt('afp', 'AFP') + opt('onp', 'ONP (13%)') + opt('none', 'Ninguno') + '</select></div>' +
+      (f.pension === 'afp' ? fld('Descuento AFP total (%)', 'afpPct', 'number', 'Aporte + comisión + seguro; varía por AFP') : '<div></div>') + '</div>';
+  }
+  return fld('Honorario mensual (S/)', 'monto') + chk('Tengo suspensión de retenciones de 4.ª categoría', 'susp');
+}
+
+function compute() {
+  const f = S.f, c = computable(f), rg = REG[f.reg];
+  const base = { sueldo: Number(f.sueldo) || 0, asig: !!f.asig, varProm: Number(f.varProm) || 0, reg: f.reg };
+  if (S.calc === 'grati') {
+    const g = gratificacion(Object.assign({ meses: Number(f.meses), eps: !!f.eps }, base));
+    const rows = [['Remuneración computable', g.comp], ['Gratificación (' + f.meses + '/6)', g.base], ['Bonificación extraordinaria ' + (f.eps ? '6.75%' : '9%'), g.bon]];
+    const notes = [];
+    if (f.reg === 'micro') notes.push('La microempresa REMYPE no paga gratificaciones.');
+    if (f.reg === 'pequena') notes.push('La pequeña empresa REMYPE paga media gratificación (½ sueldo por semestre).');
+    return { band: { l: 'Gratificación a recibir', v: g.total, s: 'Se paga hasta el 15 de julio y el 15 de diciembre' }, rows: rows, total: ['Total a recibir', g.total],
+      formula: '(' + fmt(g.comp) + ' × ' + (rg.g === 1 ? '1' : rg.g === 0.5 ? '½' : '0') + ' ÷ 6) × ' + f.meses + ' = ' + fmt(g.base) + ', más bonificación', notes: notes };
+  }
+  if (S.calc === 'cts') {
+    const t = cts(Object.assign({ meses: Number(f.meses), dias: Number(f.dias), gratiLast: f.gratiLast }, base));
+    const notes = [];
+    if (f.reg === 'micro') notes.push('La microempresa REMYPE no tiene derecho a CTS.');
+    if (f.reg === 'pequena') notes.push('La pequeña empresa REMYPE paga CTS equivalente a 15 remuneraciones diarias por año (50%).');
+    return { band: { l: 'CTS a depositar', v: t.total, s: 'Se deposita hasta el 15 de mayo y el 15 de noviembre' },
+      rows: [['Remuneración computable', t.comp], ['1/6 de la gratificación', t.sexto], ['Base de cálculo', t.base]], total: ['CTS del periodo', t.total],
+      formula: fmt(t.base) + ' ÷ 12 × ' + f.meses + ' meses + ' + fmt(t.base) + ' ÷ 360 × ' + f.dias + ' días', notes: notes };
+  }
+  if (S.calc === 'vac') {
+    if (f.modo === 'goce') {
+      const pay = r2(c * (rg.v / 30) * 0 + c / 30 * (Number(f.diasGoce) || 0));
+      return { band: { l: 'Remuneración vacacional', v: pay, s: (f.diasGoce || 0) + ' días a gozar' }, rows: [['Remuneración computable', c], ['Valor por día (÷ 30)', r2(c / 30)]], total: ['Total del periodo', pay],
+        formula: fmt(c) + ' ÷ 30 × ' + (f.diasGoce || 0) + ' días', notes: ['En régimen general corresponden 30 días por año; en REMYPE, 15 días.'] };
+    }
+    const v = vacTrunca(Object.assign({ meses: Number(f.meses), dias: Number(f.dias) }, base));
+    return { band: { l: 'Vacaciones truncas', v: v, s: 'Pago proporcional al tiempo trabajado' }, rows: [['Remuneración computable', c], ['Días de descanso por año', rg.v]], total: ['Total a recibir', v],
+      formula: fmt(c) + ' × (' + rg.v + '/30) × (' + f.meses + '/12 + ' + f.dias + '/360)', notes: [] };
+  }
+  if (S.calc === 'liq') {
+    if (!f.ingreso || !f.cese || f.ingreso > f.cese) return { error: 'La fecha de cese debe ser igual o posterior a la de ingreso.' };
+    const L = liquidacion(Object.assign({ ingreso: f.ingreso, cese: f.cese, vencidos: Number(f.vencidos) || 0, despido: !!f.despido && S.premium, eps: !!f.eps }, base));
+    const rows = L.items.map(function (i) { return [i.l, i.v]; });
+    const notes = ['Tiempo de servicios: ' + L.years + ' año(s), ' + (L.tenure.m % 12) + ' mes(es) y ' + L.tenure.d + ' día(s).'];
+    notes.push('No incluye sueldo pendiente del mes, horas extra ni descuentos de AFP/ONP o impuesto a la renta.');
+    return { band: { l: 'Liquidación estimada', v: L.total, s: 'Beneficios sociales al cese' }, rows: rows, total: ['Total estimado', L.total], formula: '', notes: notes };
+  }
+  if (S.calc === 'neto') {
+    const n = sueldoNeto(Object.assign({ pension: f.pension, afpPct: Number(f.afpPct) || 0 }, base));
+    const notes = ['Estimación del mes ordinario: proyecta 12 sueldos y 2 gratificaciones con bonificación, deduce 7 UIT (' + fmt(7 * UIT) + ') y divide el impuesto anual entre 12.',
+      'En julio y diciembre la retención sube por la gratificación, y puede variar si tienes otros ingresos o gastos deducibles.'];
+    if (f.reg === 'micro') notes.push('Microempresa: sin gratificaciones en la proyección.');
+    return { band: { l: 'Sueldo neto mensual estimado', v: n.neto, s: 'Después de pensión y retención de 5.ª categoría' },
+      rows: [['Remuneración bruta', n.comp], ['Pensión (' + (f.pension === 'onp' ? 'ONP 13%' : f.pension === 'afp' ? 'AFP ' + (Number(f.afpPct) || 0) + '%' : 'ninguna') + ')', -n.pen],
+        ['Renta anual proyectada', n.anual], ['Renta neta imponible (− 7 UIT)', n.neta], ['Impuesto anual', n.taxAnual], ['Retención mensual 5.ª cat.', -n.ret]],
+      total: ['Sueldo neto', n.neto], formula: fmt(n.comp) + ' − ' + fmt(n.pen) + ' − ' + fmt(n.ret), notes: notes };
+  }
+  const h = honorarios(Number(f.monto) || 0, !!f.susp);
+  const notes = [];
+  if ((Number(f.monto) || 0) <= 3000) notes.push('Hasta S/ 3,000 mensuales no corresponde retención de 4.ª categoría.');
+  notes.push('El impuesto anual es una estimación solo con renta de 4.ª categoría (deduce 20% y 7 UIT; UIT ' + fmt(UIT) + ').');
+  return { band: { l: 'Neto mensual tras retención', v: h.neto, s: h.ret ? 'Retención del 8%: ' + fmt(h.ret) : 'Sin retención' },
+    rows: [['Honorario mensual', Number(f.monto) || 0], ['Retención (8%)', -h.ret], ['Renta neta anual imponible', h.neta], ['Impuesto anual estimado', h.tax], ['Equivale a, por mes', h.mensual]], total: ['Neto mensual', h.neto],
+    formula: '', notes: notes };
+}
+function resultHTML() {
+  const r = compute();
+  if (r.error) return '<div class="note">' + ICON.info + '<span>' + esc(r.error) + '</span></div>';
+  let h = '<div class="band"><span class="l">' + r.band.l + '</span><span class="v">' + fmt(r.band.v) + '</span><span class="s">' + esc(r.band.s) + '</span></div><div class="tbl">';
+  r.rows.forEach(function (x) { h += '<div class="tr' + (x[1] < 0 ? ' neg' : '') + '"><span>' + esc(x[0]) + '</span><span class="num">' + fmt(x[1]) + '</span></div>'; });
+  h += '<div class="tr tot"><span>' + esc(r.total[0]) + '</span><span class="num">' + fmt(r.total[1]) + '</span></div></div>';
+  if (r.formula) h += '<div class="formula">' + esc(r.formula) + '</div>';
+  r.notes.forEach(function (n) { h += '<div class="note">' + ICON.info + '<span>' + esc(n) + '</span></div>'; });
+  const text = [CALCS.filter(function (c) { return c.id === S.calc; })[0].n + ' — ' + r.band.l + ': ' + fmt(r.band.v)].concat(r.rows.map(function (x) { return x[0] + ': ' + fmt(x[1]); })).concat(['(Cálculo referencial, Liquida)']).join('\n');
+  S.copyText = text;
+  h += '<button type="button" class="btn ghost block" data-act="copy">' + ICON.copy + ' Copiar resumen</button>';
+  return h;
+}
+
+function calcView() {
+  let h = '<section class="card"><div class="seg" role="tablist" aria-label="Calculadoras">';
+  CALCS.forEach(function (c) { h += '<button type="button" role="tab" data-act="calc" data-v="' + c.id + '" aria-selected="' + (S.calc === c.id) + '">' + c.n + '</button>'; });
+  h += '</div><div id="form" style="display:grid;gap:14px">' + formHTML() + '</div></section>';
+  h += '<section class="card" id="res" aria-live="polite">' + resultHTML() + '</section>';
+  return h;
+}
+function teamStats(w) {
+  const o = { sueldo: w.sueldo, asig: w.asig, varProm: 0, reg: w.reg };
+  const g = gratificacion(Object.assign({ meses: 6, eps: false }, o)), c = cts(Object.assign({ meses: 6, dias: 0, gratiLast: '' }, o));
+  return { g: g.total, c: c.total };
+}
+function teamView() {
+  let h = '<section class="card"><div><h2>Mi equipo</h2><p class="sub">Guarda a tus trabajadores y calcula sus beneficios con un toque.</p></div><div class="wlist">';
+  if (!S.workers.length) h += '<p class="sub">Aún no tienes trabajadores guardados.</p>';
+  let tg = 0, tc = 0;
+  S.workers.forEach(function (w) {
+    const st = teamStats(w); tg += st.g; tc += st.c;
+    h += '<div class="wrow"><div><b>' + esc(w.name) + '</b><small>' + fmt(w.sueldo) + ' · ' + REG[w.reg].n + '</small><small>Grati. semestre ' + fmt(st.g) + ' · CTS semestre ' + fmt(st.c) + '</small></div>' +
+      '<div class="acts"><button type="button" class="btn sm ghost" data-act="use" data-id="' + w.id + '">Usar</button><button type="button" class="ib" aria-label="Quitar a ' + esc(w.name) + '" data-act="del" data-id="' + w.id + '">' + ICON.close + '</button></div></div>';
+  });
+  h += '</div><button type="button" class="btn block" data-act="addw">Agregar trabajador</button>' +
+    '<p class="fine center">' + (S.premium ? 'Premium: trabajadores ilimitados' : 'Gratis: ' + S.workers.length + ' de 3 trabajadores') + '</p></section>';
+  if (S.premium) {
+    h += '<section class="card"><h2>Costo de planilla por semestre</h2><div class="tbl"><div class="tr"><span>Gratificaciones (con bonif.)</span><span class="num">' + fmt(r2(tg)) + '</span></div>' +
+      '<div class="tr"><span>CTS</span><span class="num">' + fmt(r2(tc)) + '</span></div><div class="tr tot"><span>Total estimado</span><span class="num">' + fmt(r2(tg + tc)) + '</span></div></div></section>';
+  } else {
+    h += '<section class="card"><h2>' + ICON.lock + ' Totales de planilla</h2><p class="sub">Con Premium ves cuánto necesitas provisionar cada semestre para gratificaciones y CTS de todo tu equipo.</p><button type="button" class="btn ghost block" data-act="prem">Ver Premium</button></section>';
+  }
+  return h;
+}
+function guideView() {
+  const rows = [['Remuneración Mínima Vital', 'S/ 1,230 (desde el 1 de oct. 2026)'], ['Asignación familiar (10% RMV)', 'S/ ' + ASIG.toFixed(2)], ['UIT 2026', fmt(UIT)],
+    ['Gratificaciones', 'Jul. y dic. · 1 sueldo + 9% (EsSalud) o 6.75% (EPS)'], ['CTS', 'Depósito hasta 15 may. y 15 nov. · 1/12 por mes'], ['Vacaciones', '30 días (general) · 15 días (REMYPE)'],
+    ['Retención 4.ª categoría', '8% si el honorario supera S/ 3,000 al mes'], ['Pensión', 'ONP 13% · AFP ≈ 12–13% (varía)'], ['Renta 5.ª categoría', 'Se deducen 7 UIT; tramos 8%, 14%, 17%, 20%, 30%'], ['Despido arbitrario', '1.5 sueldos por año, tope 12 (general)']];
+  let h = '<section class="card"><h2>Reglas que usa Liquida</h2><div class="tbl">';
+  rows.forEach(function (r) { h += '<div class="tr"><span>' + r[0] + '</span><span class="num" style="text-align:right;white-space:normal;font-size:.8rem">' + r[1] + '</span></div>'; });
+  h += '</div></section>';
+  if (IS_OWNER && DB) {
+    h += '<section class="card"><h2>Panel del creador</h2><p class="sub">Interés en Premium registrado por quienes abren esta página.</p>' +
+      (STATS ? '<div class="tbl"><div class="tr"><span>Plan mensual</span><span class="num">' + STATS.mensual + '</span></div><div class="tr"><span>Plan anual</span><span class="num">' + STATS.anual + '</span></div><div class="tr tot"><span>Total interesados</span><span class="num">' + (STATS.mensual + STATS.anual) + '</span></div></div>' : '<p class="fine">Cargando…</p>') + '</section>';
+  }
+  h += '<section class="card"><h2>Importante</h2><div class="note">' + ICON.info + '<span>Liquida es una herramienta referencial. No sustituye la asesoría de un abogado laboralista o contador, ni constituye consejo legal o financiero. Las cifras se basan en la normativa vigente en octubre de 2026 y pueden cambiar.</span></div>' +
+    '<p class="fine">Confirma montos y fechas en gob.pe/trabajo y sunat.gob.pe antes de pagar o firmar una liquidación.</p></section>';
+  return h;
+}
+function render() {
+  const t = S.tab;
+  let h = '<header class="top"><div class="brand"><svg class="logo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9"/><path d="M9 24V10M9 10h7a4 4 0 010 8H9M17 18l7 6"/></svg><div>Liquida<small>Beneficios laborales Perú</small></div></div>' +
+    '<button type="button" class="pchip" data-act="prem" aria-label="Plan">' + (S.premium ? '<b>Premium</b>' : 'Plan <b>Gratis</b>') + '</button></header>' +
+    '<nav class="nav" role="tablist">' + [['calc', 'Calcular'], ['team', 'Equipo'], ['guide', 'Guía']].map(function (x) {
+      return '<button type="button" role="tab" data-act="tab" data-v="' + x[0] + '" aria-selected="' + (t === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</nav>';
+  h += t === 'calc' ? calcView() : t === 'team' ? teamView() : guideView();
+  h += '<footer class="disc"><span>Cálculos referenciales, no constituyen asesoría legal ni financiera.</span></footer>';
+  app.innerHTML = h;
+}
+
+function openSheet(html) { sheet.innerHTML = '<div class="sheet" role="dialog" aria-modal="true">' + html + '</div>'; sheet.hidden = false; }
+function closeSheet() { sheet.hidden = true; sheet.innerHTML = ''; }
+function openPremium() {
+  openSheet('<div class="sh-top"><h2>Liquida Premium</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>' +
+    '<ul class="list"><li>' + ICON.check + '<span>Trabajadores ilimitados (gratis: hasta 3)</span></li><li>' + ICON.check + '<span>Indemnización por despido arbitrario en la liquidación</span></li><li>' + ICON.check + '<span>Totales de planilla por semestre</span></li></ul>' +
+    '<div class="plans"><button type="button" class="plan" data-act="plan" data-v="mensual" aria-pressed="' + (S.plan === 'mensual') + '"><span>Mensual</span><b>S/ 9.90</b></button><button type="button" class="plan" data-act="plan" data-v="anual" aria-pressed="' + (S.plan === 'anual') + '"><span>Anual</span><b>S/ 79</b><em>Ahorra 33%</em></button></div>' +
+    (!S.premium && window.LIQUIDA_CFG ? '<div class="fld"><label for="p-mail">Tu correo (te avisamos cuando abra la suscripción)</label><input id="p-mail" type="email" autocomplete="email" placeholder="tucorreo@ejemplo.com"></div>' : '') + (S.premium ? '<button type="button" class="btn ghost block" data-act="unprem">Volver al plan gratis</button>' : '<button type="button" class="btn block" data-act="goprem">Probar Premium y reservar mi lugar</button>') +
+    '<p class="fine center">Aún no hay cobro: activas Premium de prueba y registramos tu interés en el plan elegido para avisarte cuando abra la suscripción.</p>');
+}
+function openAdd() {
+  openSheet('<div class="sh-top"><h2>Nuevo trabajador</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>' +
+    '<div class="fld"><label for="n-name">Nombre</label><input id="n-name" type="text" maxlength="40" autocomplete="off"></div>' +
+    '<div class="fld"><label for="n-sueldo">Sueldo mensual (S/)</label><input id="n-sueldo" class="num" type="number" inputmode="decimal" min="0" value="' + (Number(S.f.sueldo) || 0) + '"></div>' +
+    '<label class="chk"><input type="checkbox" id="n-asig"> Recibe asignación familiar</label>' +
+    '<div class="fld"><label for="n-reg">Régimen</label><select id="n-reg">' + Object.keys(REG).map(function (k) { return '<option value="' + k + '">' + REG[k].n + '</option>'; }).join('') + '</select></div>' +
+    '<button type="button" class="btn block" data-act="savew">Guardar</button>');
+  setTimeout(function () { const e = document.getElementById('n-name'); if (e) e.focus(); }, 30);
+}
+function setRes() { const r = document.getElementById('res'); if (r) r.innerHTML = resultHTML(); }
+
+app.addEventListener('input', function (e) {
+  const k = e.target.dataset.k; if (!k) return;
+  const t = e.target;
+  if (t.type === 'checkbox') {
+    if (k === 'despido' && t.checked && !S.premium) { t.checked = false; openPremium(); return; }
+    S.f[k] = t.checked;
+  } else if (t.type === 'number') S.f[k] = t.value === '' ? '' : Number(t.value);
+  else S.f[k] = t.value;
+  if (k === 'gratiLast' && t.value === '') S.f[k] = '';
+  save(); setRes();
+});
+app.addEventListener('change', function (e) {
+  if (e.target.dataset.actChange === 'pick') {
+    const w = S.workers.filter(function (x) { return x.id === e.target.value; })[0];
+    if (w) { S.f.sueldo = w.sueldo; S.f.asig = w.asig; S.f.reg = w.reg; save(); render(); toast('Datos de ' + w.name + ' cargados'); }
+  }
+});
+function onClick(e) {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const a = b.dataset.act, v = b.dataset.v;
+  if (a === 'tab') { S.tab = v; render(); }
+  else if (a === 'calc') { S.calc = v; save(); render(); }
+  else if (a === 'modo') { S.f.modo = v; save(); render(); }
+  else if (a === 'copy') copy(S.copyText || '');
+  else if (a === 'prem') openPremium();
+  else if (a === 'plan') { S.plan = v; openPremium(); }
+  else if (a === 'goprem') { const pm = document.getElementById('p-mail'); if (pm && pm.value) sendLead(pm.value.trim()); S.premium = true; recordInterest(); save(); closeSheet(); render(); toast('Premium activado (demo)'); }
+  else if (a === 'unprem') { S.premium = false; S.f.despido = false; save(); closeSheet(); render(); }
+  else if (a === 'close') closeSheet();
+  else if (a === 'addw') { if (!S.premium && S.workers.length >= 3) openPremium(); else openAdd(); }
+  else if (a === 'savew') {
+    const name = document.getElementById('n-name').value.trim();
+    if (!name) { toast('Escribe un nombre'); return; }
+    S.workers.push({ id: 'w' + Date.now().toString(36), name: name, sueldo: Number(document.getElementById('n-sueldo').value) || 0,
+      asig: document.getElementById('n-asig').checked, reg: document.getElementById('n-reg').value });
+    save(); closeSheet(); render();
+  }
+  else if (a === 'del') { S.workers = S.workers.filter(function (w) { return w.id !== b.dataset.id; }); save(); render(); }
+  else if (a === 'use') {
+    const w = S.workers.filter(function (x) { return x.id === b.dataset.id; })[0];
+    if (w) { S.f.sueldo = w.sueldo; S.f.asig = w.asig; S.f.reg = w.reg; S.tab = 'calc'; save(); render(); window.scrollTo(0, 0); }
+  }
+}
+app.addEventListener('click', onClick);
+sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); else onClick(e); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
+(function () {
+  try {
+    location.hash.replace(/^#/, '').split('&').forEach(function (kv) {
+      const p = kv.split('='), k = p[0], v = decodeURIComponent(p[1] || '');
+      if (k === 'calc' && CALCS.some(function (c) { return c.id === v; })) S.calc = v;
+      else if (['sueldo', 'varProm', 'meses', 'dias', 'monto'].indexOf(k) >= 0 && v !== '' && !isNaN(v)) S.f[k] = Number(v);
+      else if (k === 'reg' && REG[v]) S.f.reg = v;
+    });
+  } catch (e) {}
+})();
+render();
+
+</script>
+</body></html>

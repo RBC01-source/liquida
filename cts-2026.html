@@ -1,0 +1,205 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cómo calcular la CTS en Perú (2026) con fórmula y ejemplo</title><meta name="description" content="Fórmula de la CTS en Perú con ejemplo: remuneración computable, 1/6 de la gratificación, meses y días. Fechas de depósito mayo y noviembre.">
+<link rel="canonical" href="https://rbc01-source.github.io/liquida/cts-2026.html"><meta property="og:title" content="Cómo calcular la CTS en Perú (2026) con fórmula y ejemplo"><meta property="og:description" content="Fórmula de la CTS en Perú con ejemplo: remuneración computable, 1/6 de la gratificación, meses y días. Fechas de depósito mayo y noviembre."><meta property="og:type" content="website"><meta property="og:locale" content="es_PE">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Concept: a payroll ledger you can read at a glance. Paper-cool ground, bank-green ink,
+   one Peruvian red accent, and a pale-gold band that holds the number that matters. */
+:root{
+  --bg:#F0F4F2; --surface:#FFFFFF; --ink:#0E2420; --muted:#55706A; --line:#D3DEDA;
+  --accent:#B8232F; --on-accent:#FFFFFF;
+  --band:#FFEFB8; --on-band:#2A2100;
+  --ok:#17744F; --warn:#8F5200; --key:#E2EBE7;
+  --shadow:0 1px 0 rgba(14,36,32,.05), 0 10px 26px -16px rgba(14,36,32,.35);
+  --f-body:"Schibsted Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1513; --surface:#12211E; --ink:#E7F1EE; --muted:#93AAA3; --line:#25403A;
+    --accent:#FF7079; --on-accent:#2B0A0D;
+    --band:#3B3213; --on-band:#FFF1C4;
+    --ok:#4FD1A2; --warn:#F0B35A; --key:#1B2F2A;
+    --shadow:0 1px 0 rgba(0,0,0,.4), 0 12px 28px -16px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1513; --surface:#12211E; --ink:#E7F1EE; --muted:#93AAA3; --line:#25403A;
+  --accent:#FF7079; --on-accent:#2B0A0D;
+  --band:#3B3213; --on-band:#FFF1C4;
+  --ok:#4FD1A2; --warn:#F0B35A; --key:#1B2F2A;
+  --shadow:0 1px 0 rgba(0,0,0,.4), 0 12px 28px -16px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{height:100%;box-sizing:border-box}
+body{min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
+  -webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+h1,h2,h3,p{margin:0}
+.wrap{max-width:560px;margin:0 auto;padding-bottom:40px}
+svg{display:block}
+.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600}
+
+/* ---------- header ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:18px 12px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.5rem;letter-spacing:-.04em}
+.brand small{display:block;font-weight:500;font-size:.78rem;letter-spacing:0;color:var(--muted);margin-top:-3px}
+.logo rect{fill:var(--accent)} .logo path{stroke:var(--on-accent);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.pchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:.78rem;font-weight:600;color:var(--muted)}
+.pchip b{color:var(--ink)}
+.nav{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--key);padding:4px;border-radius:14px;margin-bottom:14px}
+.nav button{min-height:42px;border-radius:10px;font-weight:700;font-size:.92rem;color:var(--muted)}
+.nav button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+
+/* ---------- cards & forms ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow);display:grid;gap:14px}
+.card + .card{margin-top:14px}
+.card h2{font-size:1.05rem;font-weight:800;letter-spacing:-.02em}
+.eyebrow{font-weight:700;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fld{display:grid;gap:5px;min-width:0}
+.fld label,.fld .l{font-size:.82rem;font-weight:700;color:var(--muted)}
+.fld input[type=text],.fld input[type=number],.fld input[type=date],.fld select{width:100%;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:0 12px;font-weight:600}
+.fld input.num{font-family:var(--f-mono)}
+.fld .hint{font-size:.76rem;color:var(--muted)}
+.chk{display:flex;gap:10px;align-items:center;min-height:44px;font-weight:600;font-size:.94rem}
+.chk input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.sub{color:var(--muted);font-size:.9rem}
+.fine{color:var(--muted);font-size:.8rem}
+.center{text-align:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;border-radius:12px;font-weight:700;background:var(--accent);color:var(--on-accent);transition:transform .08s, filter .15s}
+.btn:active{transform:scale(.98)} .btn:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn.block{width:100%}
+.btn.sm{min-height:40px;padding:0 14px;font-size:.9rem}
+.btn:disabled{opacity:.45;cursor:default;filter:none}
+.link{color:var(--muted);text-decoration:underline;text-underline-offset:3px;font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 10px;font-size:.78rem;font-weight:700;background:var(--key);color:var(--ink)}
+.chip.prem{background:var(--accent);color:var(--on-accent)}
+.seg{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.seg button{flex:none;min-height:38px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);font-weight:700;font-size:.88rem;color:var(--muted);background:var(--surface)}
+.seg button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+
+/* ---------- results ---------- */
+.band{background:var(--band);color:var(--on-band);border-radius:16px;padding:16px;display:grid;gap:4px}
+.band .l{font-weight:700;font-size:.82rem;opacity:.85}
+.band .v{font-family:var(--f-mono);font-weight:600;font-size:2rem;letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums}
+.band .s{font-size:.86rem;opacity:.9}
+.tbl{display:grid;gap:0}
+.tr{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
+.tr:last-child{border-bottom:0}
+.tr span:first-child{color:var(--muted);font-size:.92rem;min-width:0}
+.tr .num{white-space:nowrap}
+.tr.tot{font-weight:800}
+.tr.tot span:first-child{color:var(--ink);font-weight:800}
+.tr.neg .num{color:var(--accent)}
+.note{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:12px;background:var(--key);font-size:.86rem;color:var(--ink)}
+.note .i{flex:none;margin-top:2px;color:var(--warn)}
+.formula{font-family:var(--f-mono);font-size:.78rem;color:var(--muted);background:var(--bg);border-radius:10px;padding:10px 12px;overflow-wrap:anywhere}
+.wlist{display:grid;gap:10px}
+.wrow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.wrow b{display:block}
+.wrow small{color:var(--muted)}
+.wrow .acts{display:flex;gap:6px}
+.disc{margin-top:18px;color:var(--muted);font-size:.78rem;text-align:center;display:grid;gap:8px;justify-items:center}
+
+/* ---------- sheets & toast ---------- */
+.toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top, 0px) + 20px);transform:translate(-50%,-6px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:700;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .15s, transform .15s;z-index:60;max-width:calc(100vw - 32px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.sheet-wrap{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center;background:color-mix(in srgb, #050c0b 62%, transparent);animation:fade .15s}
+@keyframes fade{from{opacity:0}}
+.sheet{width:100%;max-width:560px;max-height:92%;overflow-y:auto;background:var(--surface);color:var(--ink);border-radius:22px 22px 0 0;padding:22px max(18px, env(safe-area-inset-left, 0px)) calc(22px + env(safe-area-inset-bottom, 0px));display:grid;gap:16px;animation:rise .22s ease-out}
+@keyframes rise{from{transform:translateY(30px);opacity:.4}}
+.sheet h2{font-weight:800;font-size:1.3rem;letter-spacing:-.03em;text-wrap:balance}
+.sh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.ib{width:44px;height:44px;border-radius:12px;display:grid;place-items:center}
+.ib:hover{background:var(--key)}
+.acts-col{display:grid;gap:10px}
+.list{display:grid;gap:10px;padding:0;margin:0;list-style:none}
+.list li{display:flex;gap:10px;align-items:flex-start}
+.list .i{color:var(--ok);margin-top:3px;flex:none}
+.plans{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.plan{border:2px solid var(--line);border-radius:14px;padding:12px;text-align:left;display:grid;gap:2px;background:var(--surface)}
+.plan[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent)}
+.plan b{font-family:var(--f-mono);font-size:1.1rem}
+.plan span{color:var(--muted);font-size:.82rem}
+.plan em{font-style:normal;font-weight:700;font-size:.74rem;color:var(--accent)}
+.src a{color:var(--ink);text-underline-offset:3px;font-weight:600;overflow-wrap:anywhere}
+@media (max-width:420px){ .grid2{grid-template-columns:1fr} .band .v{font-size:1.75rem} }
+@media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation-duration:.01ms !important;transition-duration:.01ms !important} }
+
+.site{max-width:680px;margin:0 auto;padding-bottom:48px}
+.site .top a{color:inherit;text-decoration:none}
+.site nav.links{display:flex;gap:14px;flex-wrap:wrap;font-weight:700;font-size:.9rem}
+.site nav.links a{color:var(--muted);text-decoration:none}
+.site nav.links a:hover{color:var(--ink)}
+.hero{padding:26px 0 8px;display:grid;gap:14px}
+.hero h1{font-size:2.1rem;line-height:1.08;letter-spacing:-.04em;font-weight:800;text-wrap:balance}
+.hero p{color:var(--muted);font-size:1.05rem;max-width:34em}
+.hero .row{display:flex;gap:10px;flex-wrap:wrap}
+.site article{display:grid;gap:12px;margin-top:10px}
+.site article h1{font-size:1.9rem;line-height:1.1;letter-spacing:-.035em;font-weight:800;text-wrap:balance}
+.site article h2{font-size:1.15rem;font-weight:800;letter-spacing:-.02em;margin-top:10px}
+.site article p,.site article li{max-width:38em}
+.site article ul{padding-left:20px;display:grid;gap:6px;margin:0}
+.cta{background:var(--band);color:var(--on-band);border-radius:16px;padding:16px;display:grid;gap:10px;margin-top:14px}
+.cta b{font-size:1.05rem}
+.cta .btn{background:var(--ink);color:var(--bg);justify-self:start;text-decoration:none}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;text-decoration:none;color:var(--ink);display:grid;gap:4px;box-shadow:var(--shadow)}
+.tile b{font-weight:800}.tile span{color:var(--muted);font-size:.86rem}
+.lead{display:grid;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:18px;box-shadow:var(--shadow)}
+.lead h2{font-size:1.1rem;font-weight:800;margin:0}
+.lead .r{display:flex;gap:8px;flex-wrap:wrap}
+.lead input[type=email],.lead select{flex:1 1 180px;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:0 12px;font-weight:600}
+.lead .ok{color:var(--ok);font-weight:700}
+.foot{margin-top:28px;color:var(--muted);font-size:.8rem;display:grid;gap:6px}
+.foot a{color:var(--muted)}
+@media (max-width:420px){.tiles{grid-template-columns:1fr}.hero h1{font-size:1.75rem}}
+</style></head><body><div class="site">
+<header class="top"><a class="brand" href="index.html"><svg class="logo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9"/><path d="M9 24V10M9 10h7a4 4 0 010 8H9M17 18l7 6"/></svg><div>Liquida<small>Beneficios laborales Perú</small></div></a>
+<nav class="links" aria-label="Principal"><a href="calculadora.html">Calculadora</a></nav></header>
+<article><h1>Cómo calcular la CTS en Perú</h1>
+<p>La Compensación por Tiempo de Servicios (CTS) es un beneficio que el empleador deposita dos veces al año, en <b>mayo</b> y <b>noviembre</b>, en la cuenta de CTS del trabajador. Cada depósito cubre un semestre de trabajo.</p>
+<h2>Fórmula</h2>
+<p><b>Base de cálculo</b> = remuneración computable + 1/6 de la última gratificación.</p>
+<p><b>CTS del semestre</b> = base ÷ 12 × meses completos + base ÷ 360 × días adicionales.</p>
+<p>La remuneración computable incluye el sueldo básico, la asignación familiar y el promedio de variables como comisiones u horas extra.</p>
+<h2>Ejemplo</h2>
+<p>Sueldo de S/ 1,500, sin asignación familiar y con 6 meses completos. La gratificación mensual es S/ 1,500, así que 1/6 es S/ 250 y la base es S/ 1,750. La CTS del semestre es 1,750 ÷ 12 × 6 = <b>S/ 875.00</b>.</p>
+<h2>Régimen laboral</h2>
+<p>En el régimen general se paga la CTS completa. La pequeña empresa inscrita en la REMYPE paga el equivalente a la mitad, y la microempresa no tiene CTS.</p>
+
+<div class="cta"><b>Hazlo con tus datos</b><span>Ingresa tu sueldo y obtén el monto en segundos.</span><a class="btn" href="calculadora.html#calc=cts&sueldo=1500&meses=6">Calcular mi CTS</a></div></article><h2 style="margin-top:22px;font-size:1.05rem">Más guías</h2><div class="tiles"><a class="tile" href="gratificacion-julio-diciembre.html"><b>Gratificación de julio y diciembre: cómo se calcula</b></a><a class="tile" href="vacaciones-truncas.html"><b>Vacaciones truncas: cómo calcularlas</b></a><a class="tile" href="liquidacion-beneficios-sociales.html"><b>Liquidación de beneficios sociales: qué incluye</b></a><a class="tile" href="despido-arbitrario-indemnizacion.html"><b>Indemnización por despido arbitrario: monto y topes</b></a></div>
+<form class="lead" data-origin="cts-2026.html" novalidate><h2>Liquida para estudios contables y pymes</h2>
+<p class="sub">Estamos preparando planilla con varios trabajadores, exportar a PDF y Excel, e historial. Deja tu correo y te avisamos primero.</p>
+<div class="r"><input type="email" name="email" placeholder="tucorreo@ejemplo.com" autocomplete="email" aria-label="Correo electrónico" required>
+<select name="tipo" aria-label="Soy"><option value="persona">Soy trabajador/a</option><option value="contador">Soy contador/a</option><option value="empresa">Tengo una empresa</option></select></div>
+<button class="btn" type="submit">Quiero que me avisen</button><p class="fine" role="status" aria-live="polite"></p></form>
+<footer class="foot"><span>Liquida es una herramienta referencial. No constituye asesoría legal, contable ni financiera, y las cifras pueden cambiar. Confirma montos y fechas en gob.pe/trabajo y sunat.gob.pe, o consulta a un contador o abogado laboralista.</span>
+<span>Cifras revisadas con la normativa vigente a octubre de 2026 (RMV S/ 1,230, UIT S/ 5,500).</span></footer></div>
+<script>window.LIQUIDA_CFG={"endpoint": "https://formspree.io/f/mkjjodoz", "email": ""};
+(function(){
+document.querySelectorAll('form.lead').forEach(function(f){
+  f.addEventListener('submit',function(e){
+    e.preventDefault();
+    var em=f.email.value.trim(), msg=f.querySelector('p[role=status]');
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){msg.textContent='Escribe un correo válido.';msg.className='fine';return;}
+    var c=window.LIQUIDA_CFG||{}, data={email:em,tipo:f.tipo.value,origen:f.dataset.origin};
+    if(c.endpoint){
+      fetch(c.endpoint,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(data)})
+        .then(function(r){ if(!r.ok) throw 0; msg.textContent='Listo, te avisaremos.'; msg.className='ok'; f.email.value=''; })
+        .catch(function(){ msg.textContent='No se pudo enviar. Inténtalo de nuevo.'; msg.className='fine'; });
+    } else if(c.email){
+      location.href='mailto:'+c.email+'?subject='+encodeURIComponent('Quiero que me avisen de Liquida')+'&body='+encodeURIComponent('Correo: '+em+'\nSoy: '+f.tipo.value);
+    } else { msg.textContent='El registro aún no está activo.'; msg.className='fine'; }
+  });
+});
+})();</script></body></html>
