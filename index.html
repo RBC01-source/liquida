@@ -172,33 +172,14 @@ svg{display:block}
 @media (max-width:420px){.tiles{grid-template-columns:1fr}.hero h1{font-size:1.75rem}}
 </style></head><body><div class="site">
 <header class="top"><a class="brand" href="index.html"><svg class="logo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9"/><path d="M9 24V10M9 10h7a4 4 0 010 8H9M17 18l7 6"/></svg><div>Liquida<small>Beneficios laborales Perú</small></div></a>
-<nav class="links" aria-label="Principal"><a href="calculadora.html">Calculadora</a></nav></header>
+<nav class="links" aria-label="Principal"><a href="calculadora.html">Calculadora</a><a href="precios.html">Precios</a></nav></header>
 <section class="hero"><h1>Calcula tu CTS, gratificación y liquidación en segundos</h1>
 <p>Para trabajadores, contadores y pequeñas empresas del Perú. Gratis, sin registrarte, con las cifras de 2026.</p>
 <div class="row"><a class="btn" href="calculadora.html">Abrir la calculadora</a><a class="btn ghost" href="liquidacion-beneficios-sociales.html">Ver cómo se calcula</a></div></section>
 <h2 style="margin:22px 0 0;font-size:1.05rem">Guías</h2><div class="tiles"><a class="tile" href="cts-2026.html"><b>Cómo calcular la CTS en Perú</b><span>Fórmula de la CTS en Perú con ejemplo: remuneración computable, 1/6 de la gratificación, meses y días. Fechas de depósito mayo y noviembre.</span></a><a class="tile" href="gratificacion-julio-diciembre.html"><b>Gratificación de julio y diciembre: cómo se calcula</b><span>Cálculo de la gratificación en Perú: un sueldo por semestre, proporcional por meses completos y bonificación extraordinaria del 9%.</span></a><a class="tile" href="vacaciones-truncas.html"><b>Vacaciones truncas: cómo calcularlas</b><span>Qué son las vacaciones truncas, cómo se calculan por meses y días trabajados y cuántos días corresponden en régimen general y REMYPE.</span></a><a class="tile" href="liquidacion-beneficios-sociales.html"><b>Liquidación de beneficios sociales: qué incluye</b><span>Qué incluye una liquidación al cese en Perú: CTS trunca, gratificación trunca, bonificación, vacaciones truncas y, según el caso, indemnización.</span></a><a class="tile" href="despido-arbitrario-indemnizacion.html"><b>Indemnización por despido arbitrario: monto y topes</b><span>Cómo se calcula la indemnización por despido arbitrario en el régimen general y la REMYPE: 1.5 sueldos por año con tope de 12.</span></a><a class="tile" href="sueldo-neto-afp-onp.html"><b>Sueldo neto: AFP, ONP y 5.ª categoría</b><span>Cómo pasar del sueldo bruto al neto en Perú: ONP 13%, AFP aproximada y retención mensual de impuesto a la renta de 5.ª categoría.</span></a><a class="tile" href="retencion-honorarios-4ta-categoria.html"><b>Retención de 4.ª categoría para honorarios</b><span>Cuándo se retiene el 8% a los recibos por honorarios en Perú, cuándo no corresponde y cómo se estima el impuesto anual.</span></a><a class="tile" href="rmv-2026-asignacion-familiar.html"><b>RMV 2026 y asignación familiar</b><span>Cuánto es la Remuneración Mínima Vital en Perú en 2026 y cómo se calcula la asignación familiar (10% de la RMV).</span></a></div>
-<form class="lead" data-origin="index.html" novalidate><h2>Liquida para estudios contables y pymes</h2>
-<p class="sub">Estamos preparando planilla con varios trabajadores, exportar a PDF y Excel, e historial. Deja tu correo y te avisamos primero.</p>
-<div class="r"><input type="email" name="email" placeholder="tucorreo@ejemplo.com" autocomplete="email" aria-label="Correo electrónico" required>
-<select name="tipo" aria-label="Soy"><option value="persona">Soy trabajador/a</option><option value="contador">Soy contador/a</option><option value="empresa">Tengo una empresa</option></select></div>
-<button class="btn" type="submit">Quiero que me avisen</button><p class="fine" role="status" aria-live="polite"></p></form>
+<section class="lead"><h2>Liquida para estudios contables y pymes</h2>
+<p class="sub">Calcula la planilla mensual (horas extras, AFP u ONP, retención de 5.ª categoría, EsSalud), emite boletas de pago y exporta a PDF y Excel. Gratis hasta 3 trabajadores; Premium desde S/ 29 al mes.</p>
+<div class="r"><a class="btn" href="precios.html">Ver precios</a><a class="btn ghost" href="calculadora.html">Probar la planilla</a></div></section>
 <footer class="foot"><span>Liquida es una herramienta referencial. No constituye asesoría legal, contable ni financiera, y las cifras pueden cambiar. Confirma montos y fechas en gob.pe/trabajo y sunat.gob.pe, o consulta a un contador o abogado laboralista.</span>
 <span>Cifras revisadas con la normativa vigente a octubre de 2026 (RMV S/ 1,230, UIT S/ 5,500).</span></footer></div>
-<script>window.LIQUIDA_CFG={"endpoint": "https://formspree.io/f/mkjjodoz", "email": ""};
-(function(){
-document.querySelectorAll('form.lead').forEach(function(f){
-  f.addEventListener('submit',function(e){
-    e.preventDefault();
-    var em=f.email.value.trim(), msg=f.querySelector('p[role=status]');
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){msg.textContent='Escribe un correo válido.';msg.className='fine';return;}
-    var c=window.LIQUIDA_CFG||{}, data={email:em,tipo:f.tipo.value,origen:f.dataset.origin};
-    if(c.endpoint){
-      fetch(c.endpoint,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(data)})
-        .then(function(r){ if(!r.ok) throw 0; msg.textContent='Listo, te avisaremos.'; msg.className='ok'; f.email.value=''; })
-        .catch(function(){ msg.textContent='No se pudo enviar. Inténtalo de nuevo.'; msg.className='fine'; });
-    } else if(c.email){
-      location.href='mailto:'+c.email+'?subject='+encodeURIComponent('Quiero que me avisen de Liquida')+'&body='+encodeURIComponent('Correo: '+em+'\nSoy: '+f.tipo.value);
-    } else { msg.textContent='El registro aún no está activo.'; msg.className='fine'; }
-  });
-});
-})();</script></body></html>
+</body></html>
