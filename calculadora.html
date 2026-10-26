@@ -119,6 +119,13 @@ details.adv[open] summary{margin-bottom:10px}
 .boleta .bg{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:.84rem;color:var(--muted)}
 .boleta .bg b{color:var(--ink)}
 .boleta .bt{font-size:.74rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.boleta .firmas{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:end;margin-top:6px}
+.boleta .fbox{display:grid;gap:6px;align-content:end;font-size:.78rem;color:var(--muted)}
+.boleta .fimg{min-height:112px;border-bottom:1.5px solid var(--ink);display:grid;place-items:center;text-align:center}
+.boleta .fimg img{max-height:100px;max-width:100%;background:#fff;border-radius:6px}
+.boleta .fimg svg{width:116px;height:116px;border-radius:4px}
+.boleta .fl b{color:var(--ink)}
+#fp{width:100%;height:170px;border:1.5px dashed var(--line);border-radius:12px;background:#fff;touch-action:none;cursor:crosshair}
 .boleta .neto{display:flex;justify-content:space-between;align-items:baseline;gap:12px;background:var(--band);color:var(--on-band);border-radius:12px;padding:12px 14px;font-weight:800}
 .disc{margin-top:18px;color:var(--muted);font-size:.78rem;text-align:center;display:grid;gap:8px;justify-items:center}
 .disc a,.sheet .fine a{color:var(--ink);font-weight:700}
@@ -463,6 +470,142 @@ function maskEmail(e) {
   const p = String(e).split('@');
   if (p.length < 2) return String(e);
   return p[0].charAt(0) + '***@' + p.slice(1).join('@');
+}
+/*QR*/
+// Generador de códigos QR (modo byte, corrección de errores L, versiones 1 a 20). Sin dependencias.
+function qrEncode(text) {
+  const ECC = [7, 10, 15, 20, 26, 18, 20, 24, 30, 18, 20, 24, 26, 30, 22, 24, 28, 30, 28, 28];
+  const BLK = [1, 1, 1, 1, 1, 2, 2, 2, 2, 4, 4, 4, 4, 4, 6, 6, 6, 6, 7, 8];
+  const bytes = Array.prototype.slice.call(new TextEncoder().encode(text));
+  const raw = function (v) { let r = (16 * v + 128) * v + 64; if (v >= 2) { const na = Math.floor(v / 7) + 2; r -= (25 * na - 10) * na - 55; if (v >= 7) r -= 36; } return r; };
+  const dcw = function (v) { return Math.floor(raw(v) / 8) - ECC[v - 1] * BLK[v - 1]; };
+  let ver = 0;
+  for (let v = 1; v <= 20; v++) { if (4 + (v < 10 ? 8 : 16) + 8 * bytes.length <= dcw(v) * 8) { ver = v; break; } }
+  if (!ver) throw new Error('Texto demasiado largo para el QR');
+  const bits = [];
+  const put = function (val, n) { for (let i = n - 1; i >= 0; i--) bits.push((val >>> i) & 1); };
+  put(4, 4); put(bytes.length, ver < 10 ? 8 : 16); bytes.forEach(function (b) { put(b, 8); });
+  const cap = dcw(ver) * 8;
+  put(0, Math.min(4, cap - bits.length)); while (bits.length % 8) bits.push(0);
+  for (let p = 0xEC; bits.length < cap; p ^= 0xEC ^ 0x11) put(p, 8);
+  const data = []; for (let i = 0; i < bits.length; i += 8) { let b = 0; for (let j = 0; j < 8; j++) b = (b << 1) | bits[i + j]; data.push(b); }
+  // Reed-Solomon
+  const mul = function (x, y) { let z = 0; for (let i = 7; i >= 0; i--) { z = (z << 1) ^ ((z >>> 7) * 0x11D); z ^= ((y >>> i) & 1) * x; } return z; };
+  const eccLen = ECC[ver - 1], nb = BLK[ver - 1];
+  const div = new Array(eccLen).fill(0); div[eccLen - 1] = 1;
+  for (let i = 0, root = 1; i < eccLen; i++) { for (let j = 0; j < eccLen; j++) { div[j] = mul(div[j], root); if (j + 1 < eccLen) div[j] ^= div[j + 1]; } root = mul(root, 2); }
+  const rawCw = Math.floor(raw(ver) / 8), nShort = nb - rawCw % nb, shortLen = Math.floor(rawCw / nb);
+  const blocks = [];
+  for (let i = 0, k = 0; i < nb; i++) {
+    const dat = data.slice(k, k + shortLen - eccLen + (i < nShort ? 0 : 1)); k += dat.length;
+    const rem = div.map(function () { return 0; });
+    dat.forEach(function (b) { const f = b ^ rem.shift(); rem.push(0); div.forEach(function (c, t) { rem[t] ^= mul(c, f); }); });
+    if (i < nShort) dat.push(0);
+    blocks.push(dat.concat(rem));
+  }
+  const all = [];
+  for (let i = 0; i < blocks[0].length; i++) blocks.forEach(function (bl, j) { if (i !== shortLen - eccLen || j >= nShort) all.push(bl[i]); });
+  // Matriz
+  const size = ver * 4 + 17;
+  const mod = [], fn = [];
+  for (let y = 0; y < size; y++) { mod.push(new Array(size).fill(false)); fn.push(new Array(size).fill(false)); }
+  const setFn = function (x, y, d) { mod[y][x] = d; fn[y][x] = true; };
+  const finder = function (cx, cy) { for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) { const x = cx + dx, y = cy + dy; if (x < 0 || y < 0 || x >= size || y >= size) continue; const d = Math.max(Math.abs(dx), Math.abs(dy)); setFn(x, y, d !== 2 && d !== 4); } };
+  finder(3, 3); finder(size - 4, 3); finder(3, size - 4);
+  for (let i = 0; i < size; i++) { setFn(6, i, i % 2 === 0); setFn(i, 6, i % 2 === 0); }
+  finder(3, 3); finder(size - 4, 3); finder(3, size - 4);
+  let al = [];
+  if (ver > 1) { const na = Math.floor(ver / 7) + 2, step = Math.ceil((ver * 4 + 4) / (na * 2 - 2)) * 2; al = [6]; for (let pos = size - 7; al.length < na; pos -= step) al.splice(1, 0, pos); }
+  al.forEach(function (ax, i) { al.forEach(function (ay, j) {
+    if ((i === 0 && j === 0) || (i === 0 && j === al.length - 1) || (i === al.length - 1 && j === 0)) return;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) setFn(ax + dx, ay + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+  }); });
+  const bit = function (x, i) { return ((x >>> i) & 1) !== 0; };
+  const fmt = function (mask) {
+    const d = (1 << 3) | mask; let r = d; for (let i = 0; i < 10; i++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+    const b = ((d << 10) | r) ^ 0x5412;
+    for (let i = 0; i <= 5; i++) setFn(8, i, bit(b, i));
+    setFn(8, 7, bit(b, 6)); setFn(8, 8, bit(b, 7)); setFn(7, 8, bit(b, 8));
+    for (let i = 9; i < 15; i++) setFn(14 - i, 8, bit(b, i));
+    for (let i = 0; i < 8; i++) setFn(size - 1 - i, 8, bit(b, i));
+    for (let i = 8; i < 15; i++) setFn(8, size - 15 + i, bit(b, i));
+    setFn(8, size - 8, true);
+  };
+  fmt(0);
+  if (ver >= 7) { let r = ver; for (let i = 0; i < 12; i++) r = (r << 1) ^ ((r >>> 11) * 0x1F25); const b = (ver << 12) | r; for (let i = 0; i < 18; i++) { const v = bit(b, i), a = size - 11 + i % 3, c = Math.floor(i / 3); setFn(a, c, v); setFn(c, a, v); } }
+  for (let i = 0, right = size - 1; right >= 1; right -= 2) {
+    if (right === 6) right = 5;
+    for (let vert = 0; vert < size; vert++) for (let j = 0; j < 2; j++) {
+      const x = right - j, up = ((right + 1) & 2) === 0, y = up ? size - 1 - vert : vert;
+      if (!fn[y][x] && i < all.length * 8) { mod[y][x] = bit(all[i >>> 3], 7 - (i & 7)); i++; }
+    }
+  }
+  const apply = function (mask) {
+    for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+      let inv;
+      switch (mask) {
+        case 0: inv = (x + y) % 2 === 0; break; case 1: inv = y % 2 === 0; break; case 2: inv = x % 3 === 0; break; case 3: inv = (x + y) % 3 === 0; break;
+        case 4: inv = (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0; break; case 5: inv = x * y % 2 + x * y % 3 === 0; break;
+        case 6: inv = (x * y % 2 + x * y % 3) % 2 === 0; break; default: inv = ((x + y) % 2 + x * y % 3) % 2 === 0;
+      }
+      if (!fn[y][x] && inv) mod[y][x] = !mod[y][x];
+    }
+  };
+  const penalty = function () {
+    let s = 0, dark = 0;
+    const lines = [];
+    for (let y = 0; y < size; y++) { let r = '', c = ''; for (let x = 0; x < size; x++) { r += mod[y][x] ? '1' : '0'; c += mod[x][y] ? '1' : '0'; if (mod[y][x]) dark++; } lines.push(r, c); }
+    lines.forEach(function (l) {
+      const runs = l.match(/0+|1+/g) || []; runs.forEach(function (r) { if (r.length >= 5) s += 3 + r.length - 5; });
+      const m = l.match(/(?=(00001011101|10111010000))/g); if (m) s += 40 * m.length;
+    });
+    for (let y = 0; y < size - 1; y++) for (let x = 0; x < size - 1; x++) { const c = mod[y][x]; if (c === mod[y][x + 1] && c === mod[y + 1][x] && c === mod[y + 1][x + 1]) s += 3; }
+    const tot = size * size; s += 10 * (Math.ceil(Math.abs(dark * 20 - tot * 10) / tot) - 1);
+    return s;
+  };
+  let best = 0, bestP = Infinity;
+  for (let m = 0; m < 8; m++) { apply(m); fmt(m); const p = penalty(); if (p < bestP) { bestP = p; best = m; } apply(m); }
+  apply(best); fmt(best);
+  return mod;
+}
+function qrSvg(text, px) {
+  const m = qrEncode(text), n = m.length, q = 4; let d = '';
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (m[y][x]) d += 'M' + (x + q) + ' ' + (y + q) + 'h1v1h-1z';
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + (n + 2 * q) + ' ' + (n + 2 * q) + '" width="' + (px || 160) + '" height="' + (px || 160) + '" shape-rendering="crispEdges" role="img" aria-label="Código QR de verificación"><rect width="100%" height="100%" fill="#fff"/><path d="' + d + '" fill="#000"/></svg>';
+}
+/*ENDQR*/
+
+/* ---------- Firma electrónica simple de boletas ----------
+   Cada boleta se firma con una llave ECDSA P-256 que se crea y se guarda en este navegador.
+   El QR lleva un enlace a verificar.html con los datos y la firma: sirve para comprobar que la boleta
+   no fue modificada. No es una firma digital con certificado emitido por una entidad acreditada. */
+const FIRMA_URL = 'https://rbc01-source.github.io/liquida/verificar.html';
+function b64u(bytes) {
+  let s = ''; for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function firmaData(w, b, ruc, period, ts) {
+  return { v: 1, r: String(ruc || ''), d: String(w.dni || ''), p: period, i: r2(b.totalIng), s: r2(b.totalDes), n: r2(b.neto), t: ts };
+}
+function firmaToken(dataB64, sigB64, pub) { return dataB64 + '.' + sigB64 + '.' + pub.x + '.' + pub.y; }
+function firmaParse(frag) {
+  const p = String(frag || '').replace(/^.*#/, '').replace(/\s+/g, '').split('.');
+  if (p.length !== 4 || p.some(function (x) { return !/^[A-Za-z0-9_-]+$/.test(x); })) return null;
+  try {
+    const j = JSON.parse(new TextDecoder().decode(unb64u(p[0])));
+    if (!j || j.v !== 1 || typeof j.n !== 'number' || typeof j.i !== 'number' || typeof j.s !== 'number' || !/^\d{4}-\d{2}$/.test(String(j.p))) return null;
+    return { data: p[0], sig: p[1], x: p[2], y: p[3], j: j };
+  } catch (e) { return null; }
+}
+async function firmaVerify(frag) {
+  const F = firmaParse(frag);
+  if (!F) return { ok: false, reason: 'format' };
+  try {
+    const key = await crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: F.x, y: F.y }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
+    const good = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, unb64u(F.sig), new TextEncoder().encode(F.data));
+    if (!good) return { ok: false, reason: 'signature' };
+    return { ok: true, d: F.j, huella: F.x.slice(0, 8) };
+  } catch (e) { return { ok: false, reason: 'crypto' }; }
 }
 /*ENDPURE*/
 
@@ -854,7 +997,7 @@ function licMessage(r) {
   return 'El código no es válido. Revisa que lo copiaste completo y sin cambios.';
 }
 function premBenefits() {
-  return '<ul class="list"><li>' + ICON.check + '<span>Trabajadores ilimitados (gratis: hasta 3)</span></li><li>' + ICON.check + '<span>Indemnización por despido arbitrario en la liquidación</span></li><li>' + ICON.check + '<span>Totales de planilla por semestre</span></li>' + (siteMode() ? '<li>' + ICON.check + '<span>Boletas de pago imprimibles y planilla mensual en PDF y Excel</span></li>' : '') + '</ul>';
+  return '<ul class="list"><li>' + ICON.check + '<span>Trabajadores ilimitados (gratis: hasta 3)</span></li><li>' + ICON.check + '<span>Indemnización por despido arbitrario en la liquidación</span></li><li>' + ICON.check + '<span>Totales de planilla por semestre</span></li>' + (siteMode() ? '<li>' + ICON.check + '<span>Boletas de pago imprimibles, con firma y código QR de verificación, y planilla mensual en PDF y Excel</span></li>' : '') + '</ul>';
 }
 function planButtons() {
   return '<div class="plans"><button type="button" class="plan" data-act="plan" data-v="mensual" aria-pressed="' + (S.plan === 'mensual') + '"><span>Mensual</span><b>S/ 29</b></button><button type="button" class="plan" data-act="plan" data-v="anual" aria-pressed="' + (S.plan === 'anual') + '"><span>Anual</span><b>S/ 290</b><em>2 meses gratis</em></button></div>';
@@ -939,6 +1082,45 @@ function openNov(id) {
     '<div class="acts-col"><button type="button" class="btn block" data-act="savenov" data-id="' + esc(id) + '">Guardar novedades</button>' +
     '<button type="button" class="btn ghost block" data-act="clearnov" data-id="' + esc(id) + '">Limpiar novedades del mes</button></div>');
 }
+
+const SKEY = 'liquida.sign.v1', FKEY = 'liquida.firmas.v1';
+const utf8 = function (t) { return new TextEncoder().encode(t); };
+async function signKeys() {
+  const alg = { name: 'ECDSA', namedCurve: 'P-256' };
+  let j = null; try { j = JSON.parse(localStorage.getItem(SKEY)); } catch (e) {}
+  if (j && j.priv && j.pub) { try { return { priv: await crypto.subtle.importKey('jwk', j.priv, alg, false, ['sign']), pub: j.pub }; } catch (e) {} }
+  const kp = await crypto.subtle.generateKey(alg, true, ['sign', 'verify']);
+  const pj = await crypto.subtle.exportKey('jwk', kp.privateKey), uj = await crypto.subtle.exportKey('jwk', kp.publicKey);
+  const pub = { kty: 'EC', crv: 'P-256', x: uj.x, y: uj.y };
+  try { localStorage.setItem(SKEY, JSON.stringify({ priv: pj, pub: pub })); } catch (e) {}
+  return { priv: await crypto.subtle.importKey('jwk', pj, alg, false, ['sign']), pub: pub };
+}
+async function firmarBoleta(w, b) {
+  const ts = Math.floor(Date.now() / 1000), K = await signKeys();
+  const data = b64u(utf8(JSON.stringify(firmaData(w, b, S.empresa.ruc, S.period, ts))));
+  const sig = new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, K.priv, utf8(data)));
+  return { url: FIRMA_URL + '#' + firmaToken(data, b64u(sig), K.pub), huella: K.pub.x.slice(0, 8), ts: ts };
+}
+function firmasLoad() { try { return JSON.parse(localStorage.getItem(FKEY)) || {}; } catch (e) { return {}; } }
+function firmaTrab(id) { const v = firmasLoad()[id + '|' + S.period]; return typeof v === 'string' && v.indexOf('data:image/png;base64,') === 0 ? v : ''; }
+function firmaTrabSet(id, url) { const f = firmasLoad(), k = id + '|' + S.period; if (url) f[k] = url; else delete f[k]; try { localStorage.setItem(FKEY, JSON.stringify(f)); } catch (e) {} }
+function openFirmaPad(id) {
+  const w = findW(id); if (!w) return;
+  openSheet('<div class="sh-top"><h2>Firma de ' + esc(w.name) + '</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>' +
+    '<p class="fine">Firma con el dedo, el mouse o el lápiz dentro del recuadro. Se guarda solo en este navegador.</p>' +
+    '<canvas id="fp" width="640" height="340" aria-label="Recuadro de firma"></canvas>' +
+    '<div class="acts-col"><button type="button" class="btn block" data-act="firma-save" data-id="' + esc(id) + '">Guardar firma</button>' +
+    '<button type="button" class="btn ghost block" data-act="firma-clear">Borrar y empezar de nuevo</button>' +
+    '<button type="button" class="btn ghost block" data-act="firma-back" data-id="' + esc(id) + '">Volver a la boleta</button></div>');
+  const c = document.getElementById('fp'); if (!c || !c.getContext) return;
+  const g = c.getContext('2d'); g.lineWidth = 4; g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#111';
+  let down = false, any = false;
+  const pt = function (e) { const r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) * c.width / (r.width || c.width), y: (e.clientY - r.top) * c.height / (r.height || c.height) }; };
+  c.addEventListener('pointerdown', function (e) { down = true; const p = pt(e); g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x + .1, p.y + .1); g.stroke(); any = true; c.dataset.any = '1'; if (c.setPointerCapture) { try { c.setPointerCapture(e.pointerId); } catch (x) {} } e.preventDefault(); });
+  c.addEventListener('pointermove', function (e) { if (!down) return; const p = pt(e); g.lineTo(p.x, p.y); g.stroke(); e.preventDefault(); });
+  const up = function () { down = false; };
+  c.addEventListener('pointerup', up); c.addEventListener('pointercancel', up);
+}
 function openBoleta(id) {
   const w = findW(id); if (!w) return;
   const b = boleta(w, nvOf(id), S.period);
@@ -956,8 +1138,20 @@ function openBoleta(id) {
     '<div class="neto"><span>Neto a pagar</span><span class="num">' + fmt(b.neto) + '</span></div>' +
     '<div class="bt">Aportes del empleador</div><div class="tbl"><div class="tr"><span>EsSalud (9%)</span><span class="num">' + fmt(b.essalud) + '</span></div></div>' +
     (b.capRet ? '<p class="fine">La retención de 5.ª categoría se limitó a lo que cobra el trabajador en el mes.</p>' : '') +
-    '<p class="fine">Documento referencial generado con Liquida. No reemplaza la boleta electrónica ni el PLAME; confirma los datos con tu contador.</p></div>' +
+    '<div class="firmas"><div class="fbox"><div class="fimg" id="bf-emp"><span class="fine">Firmando…</span></div><div class="fl" id="bf-empl">Empleador: <b>' + esc(S.empresa.name || '—') + '</b></div></div>' +
+      '<div class="fbox"><div class="fimg">' + (firmaTrab(id) ? '<img alt="Firma del trabajador" src="' + firmaTrab(id) + '">' : '') + '</div><div class="fl">Trabajador: <b>' + esc(w.name) + '</b></div>' +
+      '<button type="button" class="btn ghost sm noprint" data-act="firma-trab" data-id="' + esc(id) + '">' + (firmaTrab(id) ? 'Cambiar firma' : 'Firmar en pantalla') + '</button></div></div>' +
+    '<p class="fine">Firma electrónica simple: el QR verifica que los datos no se modificaron desde que se emitió la boleta; no es una firma digital con certificado. Documento referencial generado con Liquida; no reemplaza la boleta electrónica ni el PLAME. Confirma los datos con tu contador.</p></div>' +
     '<div class="acts-col noprint"><button type="button" class="btn block" data-act="pdf-boleta">Imprimir o guardar como PDF</button></div>');
+  const slot = document.getElementById('bf-emp'), lab = document.getElementById('bf-empl');
+  if (slot && window.crypto && crypto.subtle) {
+    firmarBoleta(w, b).then(function (f) {
+      const s2 = document.getElementById('bf-emp'), l2 = document.getElementById('bf-empl');
+      if (!s2) return;
+      s2.innerHTML = qrSvg(f.url, 116);
+      if (l2) l2.innerHTML = 'Firmado electrónicamente por <b>' + esc(S.empresa.name || 'el empleador') + '</b> · llave ' + esc(f.huella) + ' · ' + dmy(iso(new Date(f.ts * 1000))) + '<br>Verifica escaneando el QR.';
+    }).catch(function () { const s2 = document.getElementById('bf-emp'); if (s2) s2.innerHTML = '<span class="fine">No se pudo firmar en este navegador.</span>'; });
+  } else if (slot) slot.innerHTML = '<span class="fine">Este navegador no permite firmar.</span>';
 }
 function setRes() { const r = document.getElementById('res'); if (r) r.innerHTML = resultHTML(); }
 
@@ -1011,6 +1205,14 @@ function onClick(e) {
   else if (a === 'nov') openNov(b.dataset.id);
   else if (a === 'boleta') { if (!S.premium) openPremium(); else openBoleta(b.dataset.id); }
   else if (a === 'pdf-boleta') printView('print-boleta');
+  else if (a === 'firma-trab') openFirmaPad(b.dataset.id);
+  else if (a === 'firma-clear') { const c = document.getElementById('fp'); if (c && c.getContext) { c.getContext('2d').clearRect(0, 0, c.width, c.height); c.dataset.any = ''; } }
+  else if (a === 'firma-back') openBoleta(b.dataset.id);
+  else if (a === 'firma-save') {
+    const c = document.getElementById('fp');
+    if (!c || !c.dataset.any) { toast('Dibuja la firma primero'); return; }
+    firmaTrabSet(b.dataset.id, c.toDataURL('image/png')); toast('Firma guardada'); openBoleta(b.dataset.id);
+  }
   else if (a === 'savenov') {
     const id = b.dataset.id, g = function (k) { const el = document.getElementById('nv-' + k); return el ? el.value : ''; };
     const o = {};

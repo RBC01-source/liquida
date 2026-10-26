@@ -59,3 +59,15 @@ Supuestos: si no se informan los acumulados del año, la retención de 5.ª cate
 
 ## Página de precios
 `precios.html` muestra el plan gratis y Premium (S/ 29 mensual, S/ 290 anual), cómo pagar por Yape/Plin y preguntas frecuentes. Si cambias precios o número, actualiza también `precios.html` y los textos de `calculadora.html` (`planButtons` y `openPremium`).
+
+## Firma electrónica simple de boletas
+Con Premium, cada boleta se firma con una llave ECDSA P-256 que se crea y se guarda **en el navegador** del usuario (`liquida.sign.v1`). La boleta muestra un código QR con un enlace a `verificar.html`, que comprueba la firma y muestra RUC, DNI, periodo, ingresos, descuentos y neto. El trabajador puede firmar en pantalla (imagen guardada solo en su navegador, `liquida.firmas.v1`).
+
+Alcances y límites:
+- Detecta cualquier cambio de importes, DNI, periodo o RUC después de emitir la boleta.
+- **No** es una firma digital con certificado de una entidad acreditada ni prueba por sí sola quién es el empleador; la «llave» permite comparar boletas de un mismo emisor.
+- Si el usuario borra los datos del navegador, se crea una llave nueva (las boletas anteriores siguen verificándose con su llave original).
+- El generador de QR (`qrEncode`, en el bloque `PURE`) soporta hasta la versión 20 con corrección de errores L.
+
+## Pendiente: archivos PLAME y T-Registro
+Aún no se generan. Requieren las estructuras oficiales de SUNAT (T-Registro: archivos `RP_<RUC>.ide`, `.tra`, `.per`, `.est`, `.cta`, campos separados por «|»; PLAME: `.jor`, `.snl`, `.rem`, …) y sus tablas paramétricas de códigos, que deben validarse con el PVS de SUNAT antes de usarse.
