@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Generador de códigos Premium · Liquida</title>
+<style>
+:root{--bg:#F0F4F2;--surface:#fff;--ink:#0E2420;--muted:#55706A;--line:#D3DEDA;--accent:#B8232F;--on-accent:#fff;--band:#FFEFB8;--on-band:#2A2100;--ok:#17744F;--bad:#B8232F}
+@media (prefers-color-scheme:dark){:root{--bg:#0B1513;--surface:#12211E;--ink:#E7F1EE;--muted:#93AAA3;--line:#25403A;--accent:#FF7079;--on-accent:#2B0A0D;--band:#3B3213;--on-band:#FFF1C4;--ok:#4FD1A2;--bad:#FF7079}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding:16px}
+.wrap{max-width:640px;margin:0 auto;display:grid;gap:14px;padding-bottom:40px}
+h1{font-size:1.6rem;margin:8px 0 0;letter-spacing:-.03em}
+h2{font-size:1.05rem;margin:0}
+h2 small{font-weight:500;color:var(--muted)}
+p{margin:0}
+.sub{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:12px}
+.warn{background:var(--band);color:var(--on-band);border-radius:12px;padding:12px;font-size:.92rem}
+label{display:grid;gap:5px;font-size:.85rem;font-weight:700;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+textarea{min-height:92px;resize:vertical;font-family:ui-monospace,Consolas,monospace;font-size:.82rem;word-break:break-all}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:480px){.row{grid-template-columns:1fr}}
+button{font:inherit;font-weight:700;min-height:44px;border:0;border-radius:10px;padding:0 16px;cursor:pointer;background:var(--accent);color:var(--on-accent)}
+button.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+button:disabled{opacity:.45;cursor:default}
+.ok{color:var(--ok);font-weight:700}.bad{color:var(--bad);font-weight:700}
+.fine{font-size:.82rem;color:var(--muted)}
+[hidden]{display:none!important}
+</style></head><body>
+<main class="wrap">
+<h1>Generador de códigos Premium</h1>
+<p class="sub">Esta página funciona solo en tu computador y no envía nada a internet. Ábrela con doble clic desde la carpeta donde la guardaste. No la subas a ningún sitio.</p>
+
+<section class="card">
+  <h2>1. Crear mis claves <small>(solo la primera vez)</small></h2>
+  <p class="sub">Crea una clave <b>privada</b> (el archivo que te permite emitir códigos) y una clave <b>pública</b> (la que se pone en la calculadora para reconocer tus códigos).</p>
+  <div class="warn">Guarda el archivo de la clave privada en un lugar seguro (por ejemplo, una carpeta privada en la nube y una copia en USB). <b>No lo compartas ni lo subas a GitHub.</b> Si lo pierdes, tendrás que crear claves nuevas y los códigos anteriores dejarán de funcionar.</div>
+  <button id="btn-keys" type="button">Crear mis claves</button>
+  <div id="keys-out" hidden>
+    <p class="ok">Listo. Se descargó el archivo <b>liquida-clave-privada.json</b>: guárdalo bien.</p>
+    <label>Clave pública (esta sí se puede compartir; envíasela a quien configura la calculadora)
+      <textarea id="pub-out" readonly></textarea></label>
+    <button id="btn-copy-pub" type="button" class="ghost">Copiar clave pública</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>2. Cargar mi clave privada</h2>
+  <p class="sub">Cada vez que abras esta página, elige tu archivo <b>liquida-clave-privada.json</b>. Queda solo en la memoria de esta ventana.</p>
+  <label>Archivo de la clave privada<input id="file" type="file" accept=".json,application/json"></label>
+  <p id="key-status" class="fine">Todavía no cargaste ninguna clave.</p>
+</section>
+
+<section class="card">
+  <h2>3. Emitir un código</h2>
+  <div class="row">
+    <label>Correo del cliente<input id="email" type="email" autocomplete="off" placeholder="cliente@correo.com"></label>
+    <label>Plan<select id="plan"><option value="mensual">Mensual (31 días)</option><option value="anual">Anual (366 días)</option></select></label>
+  </div>
+  <label>Válido hasta (último día de uso)<input id="exp" type="date"></label>
+  <button id="btn-emit" type="button" disabled>Generar código</button>
+  <p id="emit-msg" class="fine" role="status"></p>
+  <div id="emit-out" hidden>
+    <label>Código<textarea id="code-out" readonly></textarea></label>
+    <label>Mensaje listo para enviar al cliente<textarea id="msg-out" readonly style="font-family:inherit;font-size:.9rem;word-break:normal"></textarea></label>
+    <div class="row"><button id="btn-copy-code" type="button" class="ghost">Copiar solo el código</button><button id="btn-copy-msg" type="button" class="ghost">Copiar mensaje completo</button></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Verificar un código</h2>
+  <p class="sub">Pega un código para ver a quién pertenece y hasta cuándo vale. Necesitas tener cargada tu clave (paso 2).</p>
+  <label>Código<textarea id="chk-in" placeholder="LQ1.…"></textarea></label>
+  <button id="btn-chk" type="button" class="ghost" disabled>Verificar</button>
+  <p id="chk-out" role="status"></p>
+</section>
+</main>
+
+<script>
+const SITE = 'https://rbc01-source.github.io/liquida/calculadora.html';
+/*LIC*/
+const ALG = { name: 'ECDSA', namedCurve: 'P-256' };
+const SIG = { name: 'ECDSA', hash: 'SHA-256' };
+function b64u(bytes) {
+  let s = ''; for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function unb64u(s) {
+  s = String(s).replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '=';
+  const bin = atob(s), out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+function pubOf(priv) { return { kty: priv.kty, crv: priv.crv, x: priv.x, y: priv.y }; }
+async function genKeys() {
+  const kp = await crypto.subtle.generateKey(ALG, true, ['sign', 'verify']);
+  const priv = await crypto.subtle.exportKey('jwk', kp.privateKey);
+  return { priv: priv, pub: pubOf(priv) };
+}
+async function emit(priv, email, plan, exp, today) {
+  const key = await crypto.subtle.importKey('jwk', priv, ALG, false, ['sign']);
+  const data = b64u(new TextEncoder().encode(JSON.stringify({ v: 1, e: String(email).trim().toLowerCase(), p: plan, x: exp, i: today })));
+  const sig = new Uint8Array(await crypto.subtle.sign(SIG, key, new TextEncoder().encode(data)));
+  return 'LQ1.' + data + '.' + b64u(sig);
+}
+async function check(priv, code, today) {
+  const p = String(code || '').replace(/\s+/g, '').split('.');
+  if (p.length !== 3 || p[0] !== 'LQ1') return { ok: false, reason: 'format' };
+  let j;
+  try { j = JSON.parse(new TextDecoder().decode(unb64u(p[1]))); } catch (e) { return { ok: false, reason: 'format' }; }
+  const key = await crypto.subtle.importKey('jwk', pubOf(priv), ALG, false, ['verify']);
+  const good = await crypto.subtle.verify(SIG, key, unb64u(p[2]), new TextEncoder().encode(p[1]));
+  if (!good) return { ok: false, reason: 'signature' };
+  return { ok: true, email: j.e, plan: j.p, exp: j.x, expired: today > j.x };
+}
+function addDays(iso, n) {
+  const a = iso.split('-').map(Number), d = new Date(Date.UTC(a[0], a[1] - 1, a[2] + n));
+  return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
+}
+/*ENDLIC*/
+
+const $ = id => document.getElementById(id);
+let PRIV = null;
+function todayIso() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function dmy(iso) { const p = iso.split('-'); return p[2] + '/' + p[1] + '/' + p[0]; }
+function copy(text, okMsg) {
+  const done = () => alert(okMsg || 'Copiado');
+  const fb = () => { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch (e) { alert('No se pudo copiar. Selecciona el texto y usa Ctrl+C.'); } t.remove(); };
+  try { navigator.clipboard.writeText(text).then(done, fb); } catch (e) { fb(); }
+}
+function setPlanDate() { $('exp').value = addDays(todayIso(), $('plan').value === 'anual' ? 366 : 31); }
+function setKey(priv) {
+  PRIV = priv;
+  $('btn-emit').disabled = false; $('btn-chk').disabled = false;
+  $('key-status').innerHTML = '<span class="ok">Clave cargada.</span> Huella de tu clave pública: <b>' + priv.x.slice(0, 8) + '…</b> (debe ser la misma de siempre).';
+}
+setPlanDate(); $('plan').addEventListener('change', setPlanDate);
+
+$('btn-keys').addEventListener('click', async () => {
+  if (!(window.crypto && crypto.subtle)) { alert('Tu navegador no permite crear claves. Usa Chrome, Edge o Firefox actualizados.'); return; }
+  if ($('keys-out').hidden === false && !confirm('Ya creaste claves en esta ventana. ¿Crear otras nuevas? Las anteriores dejarán de servir.')) return;
+  const k = await genKeys();
+  const blob = new Blob([JSON.stringify(k.priv)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'liquida-clave-privada.json'; document.body.appendChild(a); a.click(); a.remove();
+  $('pub-out').value = JSON.stringify(k.pub);
+  $('keys-out').hidden = false;
+  setKey(k.priv);
+});
+$('btn-copy-pub').addEventListener('click', () => copy($('pub-out').value, 'Clave pública copiada'));
+
+$('file').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    if (j.kty !== 'EC' || j.crv !== 'P-256' || !j.d || !j.x || !j.y) throw new Error('formato');
+    await crypto.subtle.importKey('jwk', j, ALG, false, ['sign']);
+    setKey(j);
+  } catch (err) { $('key-status').innerHTML = '<span class="bad">Ese archivo no es una clave privada válida.</span>'; PRIV = null; $('btn-emit').disabled = true; $('btn-chk').disabled = true; }
+});
+
+$('btn-emit').addEventListener('click', async () => {
+  const email = $('email').value.trim(), plan = $('plan').value, exp = $('exp').value, msg = $('emit-msg');
+  msg.className = 'fine';
+  if (!PRIV) { msg.textContent = 'Primero carga tu clave privada (paso 2).'; return; }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.textContent = 'Escribe un correo válido.'; msg.className = 'bad'; return; }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(exp) || exp < todayIso()) { msg.textContent = 'La fecha de vencimiento debe ser hoy o posterior.'; msg.className = 'bad'; return; }
+  const code = await emit(PRIV, email, plan, exp, todayIso());
+  $('code-out').value = code;
+  $('msg-out').value = 'Hola, gracias por tu pago. Este es tu código Premium de Liquida (plan ' + plan + ', válido hasta el ' + dmy(exp) + '):\n\n' + code +
+    '\n\nPara activarlo: abre ' + SITE + ', toca «Plan Gratis» (arriba a la derecha), pega el código en «Ya tengo un código» y toca «Activar con mi código».';
+  $('emit-out').hidden = false; msg.textContent = 'Código generado para ' + email + '.'; msg.className = 'ok';
+});
+$('btn-copy-code').addEventListener('click', () => copy($('code-out').value, 'Código copiado'));
+$('btn-copy-msg').addEventListener('click', () => copy($('msg-out').value, 'Mensaje copiado'));
+
+$('btn-chk').addEventListener('click', async () => {
+  const out = $('chk-out'); out.className = '';
+  try {
+    const r = await check(PRIV, $('chk-in').value, todayIso());
+    if (!r.ok) { out.textContent = r.reason === 'format' ? 'El código no tiene el formato correcto.' : 'Este código NO fue emitido con tu clave.'; out.className = 'bad'; }
+    else { out.textContent = 'Código válido de ' + r.email + ' · plan ' + r.plan + ' · vence el ' + dmy(r.exp) + (r.expired ? ' (YA VENCIÓ)' : ''); out.className = r.expired ? 'bad' : 'ok'; }
+  } catch (e) { out.textContent = 'No se pudo verificar el código.'; out.className = 'bad'; }
+});
+</script>
+</body></html>
