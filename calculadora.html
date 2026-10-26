@@ -121,6 +121,7 @@ details.adv[open] summary{margin-bottom:10px}
 .boleta .bt{font-size:.74rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 .boleta .neto{display:flex;justify-content:space-between;align-items:baseline;gap:12px;background:var(--band);color:var(--on-band);border-radius:12px;padding:12px 14px;font-weight:800}
 .disc{margin-top:18px;color:var(--muted);font-size:.78rem;text-align:center;display:grid;gap:8px;justify-items:center}
+.disc a,.sheet .fine a{color:var(--ink);font-weight:700}
 
 /* ---------- sheets & toast ---------- */
 .toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top, 0px) + 20px);transform:translate(-50%,-6px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:700;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .15s, transform .15s;z-index:60;max-width:calc(100vw - 32px);text-align:center}
@@ -839,7 +840,7 @@ function render() {
     '<nav class="nav" role="tablist">' + [['calc', 'Calcular'], ['team', 'Equipo'], ['plan', 'Planilla'], ['guide', 'Guía']].map(function (x) {
       return '<button type="button" role="tab" data-act="tab" data-v="' + x[0] + '" aria-selected="' + (t === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</nav>';
   h += t === 'calc' ? calcView() : t === 'team' ? teamView() : t === 'plan' ? planillaView() : guideView();
-  h += '<footer class="disc"><span>Cálculos referenciales, no constituyen asesoría legal ni financiera.</span></footer>';
+  h += '<footer class="disc"><span><a href="precios.html">Precios</a> · <a href="index.html">Inicio</a></span><span>Cálculos referenciales, no constituyen asesoría legal ni financiera.</span></footer>';
   app.innerHTML = h;
 }
 
@@ -886,6 +887,7 @@ function openPremium() {
     h += premBenefits() + planButtons() + pay + wa +
       '<p class="fine center">Después de pagar recibes un código de acceso. Pégalo abajo para activar Premium.</p>' + code;
   }
+  h += '<p class="fine center"><a href="precios.html">Ver precios y cómo pagar</a></p>';
   openSheet(h);
 }
 function findW(id) { return S.workers.filter(function (x) { return x.id === id; })[0]; }
