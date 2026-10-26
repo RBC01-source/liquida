@@ -14,6 +14,31 @@
 - Envía `sitemap.xml` a Google Search Console.
 - Revisa las cifras (RMV, UIT) cada año y cuando salga un decreto.
 
+## Cobrar Premium con códigos de acceso
+Premium se vende con pago manual: el cliente paga por tu enlace de pago, tú le envías un **código de acceso** y él lo pega en la calculadora («Plan Gratis» → «Ya tengo un código»).
+
+Cada código es `LQ1.<datos>.<firma>`. Los datos son el correo, el plan (`mensual` o `anual`) y el último día de uso; la firma es ECDSA P-256. La calculadora solo contiene la **clave pública**, que sirve para comprobar firmas pero no para crear códigos. La clave **privada** queda únicamente en tu computador, así que nadie puede fabricar códigos viendo el código del sitio. El código se vuelve a verificar cada vez que se abre la página y deja de valer al pasar su fecha de vencimiento.
+
+**Puesta en marcha (una sola vez)**
+1. Descarga `herramientas/generador-codigos.html` y ábrelo con doble clic en tu computador (funciona sin conexión).
+2. En «1. Crear mis claves» toca **Crear mis claves**. Se descarga `liquida-clave-privada.json`: guárdalo en un lugar seguro (nube privada + USB). **No lo subas a GitHub ni lo compartas.** Si lo pierdes hay que crear claves nuevas y los códigos anteriores dejan de funcionar.
+3. Copia la **clave pública** que aparece en pantalla y pégala en `calculadora.html`, en `window.LIQUIDA_LIC`, en el campo `"pub"` (hoy dice `null`).
+4. En el mismo bloque, agrega tus enlaces de pago en `"pay"` (`mensual` y `anual`, deben empezar con `https://`) y, si quieres, tu número de WhatsApp en `"whatsapp"` (con código de país, solo dígitos, por ejemplo `51999888777`).
+
+Mientras `"pub"` sea `null`, Premium sigue en **modo demo** (el botón lo activa gratis). Al poner la clave, el cobro queda activo y el Premium de prueba que cualquiera tenía guardado deja de valer.
+
+**Cada venta**
+1. El cliente paga y te avisa (correo o WhatsApp).
+2. Abre el generador, elige tu archivo de clave privada (paso 2), escribe el correo del cliente, el plan y el vencimiento (31 días el mensual, 366 el anual, editable) y toca **Generar código**.
+3. Copia el **mensaje completo** y envíaselo al cliente: ya incluye el código y las instrucciones.
+4. Para renovar, emite un código nuevo; el cliente lo pega en «Tengo un código nuevo (renovar)».
+
+**Límites a tener en cuenta**
+- Un código se puede compartir con otras personas (lleva el correo del cliente, pero la calculadora no lo exige). Con códigos de 31 días el daño es acotado.
+- No se pueden revocar códigos antes de su vencimiento. Si hay un reembolso, el código sigue valiendo hasta su fecha.
+- La fecha se compara con el reloj del dispositivo del cliente.
+- Para suscripciones automáticas, cuentas de usuario y revocación hace falta un servidor (ver siguiente paso del plan).
+
 ## Planilla mensual (régimen general, D. Leg. 728)
 La pestaña **Planilla** de `calculadora.html` calcula la planilla y la boleta de pago de los trabajadores guardados en **Equipo** que están en el régimen general (los de REMYPE se excluyen). Las funciones de cálculo están en el bloque `/*PURE*/ … /*ENDPURE*/` (`boleta`, `planillaMes`, `ret5ta`).
 

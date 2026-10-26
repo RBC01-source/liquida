@@ -1,3 +1,4 @@
 User-agent: *
 Allow: /
+Disallow: /herramientas/
 Sitemap: https://rbc01-source.github.io/liquida/sitemap.xml

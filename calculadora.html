@@ -40,7 +40,7 @@ body{min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--f-b
   -webkit-tap-highlight-color:transparent}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none;padding:0}
-button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
 h1,h2,h3,p{margin:0}
 .wrap{max-width:560px;margin:0 auto;padding-bottom:40px}
 svg{display:block}
@@ -68,6 +68,8 @@ svg{display:block}
 .fld label,.fld .l{font-size:.82rem;font-weight:700;color:var(--muted)}
 .fld input[type=text],.fld input[type=number],.fld input[type=date],.fld input[type=month],.fld select{width:100%;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:0 12px;font-weight:600}
 .fld input.num{font-family:var(--f-mono)}
+.fld textarea{width:100%;min-height:84px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:10px 12px;font-family:var(--f-mono);font-size:.78rem;word-break:break-all;resize:vertical}
+a.btn{text-decoration:none}
 .fld .hint{font-size:.76rem;color:var(--muted)}
 .chk{display:flex;gap:10px;align-items:center;min-height:44px;font-weight:600;font-size:.94rem}
 .chk input{width:20px;height:20px;accent-color:var(--accent);flex:none}
@@ -192,6 +194,12 @@ details.adv[open] summary{margin-bottom:10px}
 
 <script>
 window.LIQUIDA_CFG={"endpoint": "https://formspree.io/f/mkjjodoz", "email": ""};
+// Cobro manual con códigos de acceso firmados (ver README, «Cobrar Premium con códigos»).
+//  pub:      clave PÚBLICA (JSON) que genera la herramienta herramientas/generador-codigos.html. Mientras sea null,
+//            Premium funciona en modo demo (el botón lo activa gratis). Con clave, solo se activa con un código válido.
+//  pay:      enlaces de pago por plan (Mercado Pago, Culqi, Niubiz, Izipay…). Vacío = se pide el correo y te contactas.
+//  whatsapp: número con código de país y sin signos (ej. 51999888777) para el botón «Escríbenos». Vacío = no se muestra.
+window.LIQUIDA_LIC={"pub": null, "pay": {"mensual": "", "anual": ""}, "whatsapp": ""};
 /*PURE*/
 const RMV = 1230, UIT = 5500, ASIG = RMV * 0.10;
 const REG = {
@@ -415,6 +423,46 @@ function planillaMes(workers, novs, period) {
   Object.keys(t).forEach(function (k) { t[k] = r2(t[k]); });
   return { rows: rows, excl: excl, t: t, m: parseP(period).m };
 }
+
+/* ---------- Códigos de acceso Premium ----------
+   Formato:  LQ1.<datos en base64url>.<firma ECDSA P-256 en base64url>
+   datos = {"v":1,"e":correo,"p":"mensual"|"anual","x":"AAAA-MM-DD" (último día válido),"i":fecha de emisión}
+   La firma cubre el texto base64url de los datos. Solo quien tiene la clave privada puede emitir códigos;
+   la página únicamente contiene la clave pública, así que no se pueden fabricar códigos desde aquí. */
+function unb64u(s) {
+  s = String(s).replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '=';
+  const bin = atob(s), out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+function licParse(code) {
+  const p = String(code || '').replace(/\s+/g, '').split('.');
+  if (p.length !== 3 || p[0] !== 'LQ1' || !p[1] || !p[2]) return null;
+  try {
+    const j = JSON.parse(new TextDecoder().decode(unb64u(p[1])));
+    if (!j || typeof j.e !== 'string' || (j.p !== 'mensual' && j.p !== 'anual') || !/^\d{4}-\d{2}-\d{2}$/.test(String(j.x))) return null;
+    return { data: p[1], sig: p[2], e: j.e, p: j.p, x: j.x };
+  } catch (e) { return null; }
+}
+// Devuelve { ok:true, email, plan, exp } o { ok:false, reason:'nokey'|'format'|'signature'|'crypto'|'expired', ... }
+async function licVerify(code, pub, today) {
+  if (!pub) return { ok: false, reason: 'nokey' };
+  const L = licParse(code);
+  if (!L) return { ok: false, reason: 'format' };
+  let good = false;
+  try {
+    const key = await crypto.subtle.importKey('jwk', pub, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
+    good = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, key, unb64u(L.sig), new TextEncoder().encode(L.data));
+  } catch (e) { return { ok: false, reason: 'crypto' }; }
+  if (!good) return { ok: false, reason: 'signature' };
+  if (today > L.x) return { ok: false, reason: 'expired', email: L.e, plan: L.p, exp: L.x };
+  return { ok: true, email: L.e, plan: L.p, exp: L.x };
+}
+function maskEmail(e) {
+  const p = String(e).split('@');
+  if (p.length < 2) return String(e);
+  return p[0].charAt(0) + '***@' + p.slice(1).join('@');
+}
 /*ENDPURE*/
 
 /* ------------------------------ UI ------------------------------ */
@@ -424,8 +472,11 @@ const sheet = document.getElementById('sheet');
 const toastEl = document.getElementById('toast');
 function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 const today = new Date(), ago = new Date(today.getFullYear() - 2, today.getMonth(), 1);
+const LIC = window.LIQUIDA_LIC || {};
+function licOn() { return !!LIC.pub; }          // con clave pública configurada, Premium exige un código válido
 let S = {
   plan: 'anual', premium: false, tab: 'calc', calc: 'grati', workers: [],
+  licCode: '', lic: null, licInfo: null, licMsg: '', licDraft: '',
   period: iso(today).slice(0, 7), nov: {}, empresa: { name: '', ruc: '' },
   f: { sueldo: 2500, asig: false, varProm: 0, reg: 'general', eps: false, meses: 6, dias: 0, gratiLast: '',
        modo: 'trunca', diasGoce: 15, ingreso: iso(ago), cese: iso(today), vencidos: 0, despido: false, monto: 5000, susp: false, pension: 'afp', afpPct: 12.5 }
@@ -433,19 +484,21 @@ let S = {
 try {
   const j = JSON.parse(localStorage.getItem(KEY) || 'null');
   if (j) {
-    S.premium = !!j.premium; S.workers = Array.isArray(j.workers) ? j.workers : []; S.calc = j.calc || S.calc; Object.assign(S.f, j.f || {});
+    S.premium = !licOn() && !!j.premium;        // el «premium» guardado por la demo no vale cuando hay cobro
+    S.licCode = typeof j.lic === 'string' ? j.lic : '';
+    S.workers = Array.isArray(j.workers) ? j.workers : []; S.calc = j.calc || S.calc; Object.assign(S.f, j.f || {});
     if (j.nov && typeof j.nov === 'object') S.nov = j.nov;
     if (j.empresa && typeof j.empresa === 'object') S.empresa = { name: String(j.empresa.name || ''), ruc: String(j.empresa.ruc || '') };
   }
 } catch (e) {}
 let DB = null, UID = null, IS_OWNER = false, syncT = null;
-function localBlob() { return JSON.stringify({ premium: S.premium, workers: S.workers, f: S.f, calc: S.calc, nov: S.nov, empresa: S.empresa }); }
+function localBlob() { return JSON.stringify({ premium: licOn() ? false : S.premium, lic: S.licCode, workers: S.workers, f: S.f, calc: S.calc, nov: S.nov, empresa: S.empresa }); }
 function save() {
   try { localStorage.setItem(KEY, localBlob()); } catch (e) {}
   if (DB && UID) {
     clearTimeout(syncT);
     syncT = setTimeout(function () {
-      DB.doc('data/users/' + UID + '/state').set({ premium: S.premium, workers: S.workers, nov: S.nov, empresa: S.empresa, savedAt: Date.now() }).catch(function () {});
+      DB.doc('data/users/' + UID + '/state').set({ premium: licOn() ? false : S.premium, workers: S.workers, nov: S.nov, empresa: S.empresa, savedAt: Date.now() }).catch(function () {});
     }, 800);
   }
 }
@@ -480,7 +533,7 @@ function loadStats() {
     if (snap.exists) {
       const c = snap.data() || {};
       if (!S.workers.length && Array.isArray(c.workers)) S.workers = c.workers;
-      if (c.premium) S.premium = true;
+      if (c.premium && !licOn()) S.premium = true;
       if (!Object.keys(S.nov).length && c.nov && typeof c.nov === 'object') S.nov = c.nov;
       if (!S.empresa.name && !S.empresa.ruc && c.empresa) S.empresa = { name: String(c.empresa.name || ''), ruc: String(c.empresa.ruc || '') };
       try { localStorage.setItem(KEY, localBlob()); } catch (e) {}
@@ -792,12 +845,45 @@ function render() {
 
 function openSheet(html) { sheet.innerHTML = '<div class="sheet" role="dialog" aria-modal="true">' + html + '</div>'; sheet.hidden = false; }
 function closeSheet() { sheet.hidden = true; sheet.innerHTML = ''; }
+function dmy(s) { const p = String(s).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(s); }
+function licMessage(r) {
+  if (r.reason === 'expired') return 'Este código venció el ' + dmy(r.exp) + '. Pide uno nuevo para seguir con Premium.';
+  if (r.reason === 'format') return 'El código no tiene el formato correcto. Cópialo completo: empieza con LQ1.';
+  if (r.reason === 'crypto') return 'Tu navegador no permite verificar el código. Prueba con Chrome, Edge o Safari actualizados.';
+  return 'El código no es válido. Revisa que lo copiaste completo y sin cambios.';
+}
+function premBenefits() {
+  return '<ul class="list"><li>' + ICON.check + '<span>Trabajadores ilimitados (gratis: hasta 3)</span></li><li>' + ICON.check + '<span>Indemnización por despido arbitrario en la liquidación</span></li><li>' + ICON.check + '<span>Totales de planilla por semestre</span></li>' + (siteMode() ? '<li>' + ICON.check + '<span>Boletas de pago imprimibles y planilla mensual en PDF y Excel</span></li>' : '') + '</ul>';
+}
+function planButtons() {
+  return '<div class="plans"><button type="button" class="plan" data-act="plan" data-v="mensual" aria-pressed="' + (S.plan === 'mensual') + '"><span>Mensual</span><b>S/ 9.90</b></button><button type="button" class="plan" data-act="plan" data-v="anual" aria-pressed="' + (S.plan === 'anual') + '"><span>Anual</span><b>S/ 79</b><em>Ahorra 33%</em></button></div>';
+}
 function openPremium() {
-  openSheet('<div class="sh-top"><h2>Liquida Premium</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>' +
-    '<ul class="list"><li>' + ICON.check + '<span>Trabajadores ilimitados (gratis: hasta 3)</span></li><li>' + ICON.check + '<span>Indemnización por despido arbitrario en la liquidación</span></li><li>' + ICON.check + '<span>Totales de planilla por semestre</span></li>' + (siteMode() ? '<li>' + ICON.check + '<span>Boletas de pago imprimibles y planilla mensual en PDF y Excel</span></li>' : '') + '</ul>' +
-    '<div class="plans"><button type="button" class="plan" data-act="plan" data-v="mensual" aria-pressed="' + (S.plan === 'mensual') + '"><span>Mensual</span><b>S/ 9.90</b></button><button type="button" class="plan" data-act="plan" data-v="anual" aria-pressed="' + (S.plan === 'anual') + '"><span>Anual</span><b>S/ 79</b><em>Ahorra 33%</em></button></div>' +
-    (!S.premium && window.LIQUIDA_CFG ? '<div class="fld"><label for="p-mail">Tu correo (te avisamos cuando abra la suscripción)</label><input id="p-mail" type="email" autocomplete="email" placeholder="tucorreo@ejemplo.com"></div>' : '') + (S.premium ? '<button type="button" class="btn ghost block" data-act="unprem">Volver al plan gratis</button>' : '<button type="button" class="btn block" data-act="goprem">Probar Premium y reservar mi lugar</button>') +
-    '<p class="fine center">Aún no hay cobro: activas Premium de prueba y registramos tu interés en el plan elegido para avisarte cuando abra la suscripción.</p>');
+  const head = '<div class="sh-top"><h2>Liquida Premium</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>';
+  if (!licOn()) {   // modo demo: todavía no hay clave configurada
+    openSheet(head + premBenefits() + planButtons() +
+      (!S.premium && window.LIQUIDA_CFG ? '<div class="fld"><label for="p-mail">Tu correo (te avisamos cuando abra la suscripción)</label><input id="p-mail" type="email" autocomplete="email" placeholder="tucorreo@ejemplo.com"></div>' : '') + (S.premium ? '<button type="button" class="btn ghost block" data-act="unprem">Volver al plan gratis</button>' : '<button type="button" class="btn block" data-act="goprem">Probar Premium y reservar mi lugar</button>') +
+      '<p class="fine center">Aún no hay cobro: activas Premium de prueba y registramos tu interés en el plan elegido para avisarte cuando abra la suscripción.</p>');
+    return;
+  }
+  let h = head;
+  const code = '<div class="fld"><label for="p-code">' + (S.premium ? 'Tengo un código nuevo (renovar)' : 'Ya tengo un código') + '</label><textarea id="p-code" rows="3" autocomplete="off" spellcheck="false" placeholder="LQ1.…">' + esc(S.licDraft) + '</textarea></div>' +
+    '<button type="button" class="btn' + (S.premium ? ' ghost' : '') + ' block" data-act="activate">Activar con mi código</button>' +
+    (S.licMsg ? '<div class="note" role="alert">' + ICON.info + '<span>' + esc(S.licMsg) + '</span></div>' : '');
+  if (S.premium && S.lic) {
+    h += '<div class="note">' + ICON.check + '<span>Premium activo para <b>' + esc(maskEmail(S.lic.email)) + '</b> (plan ' + esc(S.lic.plan) + '). Válido hasta el <b>' + dmy(S.lic.exp) + '</b>.</span></div>' + premBenefits() + code +
+      '<button type="button" class="btn ghost block" data-act="unprem">Quitar Premium de este navegador</button>';
+  } else {
+    const url = (LIC.pay || {})[S.plan], price = S.plan === 'anual' ? 'S/ 79' : 'S/ 9.90';
+    const wa = LIC.whatsapp && /^\d{8,15}$/.test(LIC.whatsapp) ? '<a class="btn ghost block" href="https://wa.me/' + LIC.whatsapp + '?text=' + encodeURIComponent('Hola, quiero activar Liquida Premium (plan ' + S.plan + ').') + '" target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a>' : '';
+    const pay = (url && /^https:\/\//.test(url))
+      ? '<a class="btn block" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">Pagar ' + price + ' (plan ' + S.plan + ')</a>'
+      : '<div class="fld"><label for="p-mail">Tu correo (te enviamos los datos de pago)</label><input id="p-mail" type="email" autocomplete="email" placeholder="tucorreo@ejemplo.com"></div><button type="button" class="btn block" data-act="lead">Quiero Premium</button>';
+    if (S.licInfo && S.licInfo.reason === 'expired') h += '<div class="note">' + ICON.info + '<span>Tu Premium venció el <b>' + dmy(S.licInfo.exp) + '</b>. Renuévalo para seguir usando boletas y exportaciones.</span></div>';
+    h += premBenefits() + planButtons() + pay + wa +
+      '<p class="fine center">Después de pagar recibes un código de acceso. Pégalo abajo para activar Premium.</p>' + code;
+  }
+  openSheet(h);
 }
 function findW(id) { return S.workers.filter(function (x) { return x.id === id; })[0]; }
 function selOpt(v, t, cur) { return '<option value="' + v + '"' + (cur === v ? ' selected' : '') + '>' + t + '</option>'; }
@@ -935,8 +1021,23 @@ function onClick(e) {
   else if (a === 'editw') openAdd(b.dataset.id);
   else if (a === 'prem') openPremium();
   else if (a === 'plan') { S.plan = v; openPremium(); }
-  else if (a === 'goprem') { const pm = document.getElementById('p-mail'); if (pm && pm.value) sendLead(pm.value.trim()); S.premium = true; recordInterest(); save(); closeSheet(); render(); toast('Premium activado (demo)'); }
-  else if (a === 'unprem') { S.premium = false; S.f.despido = false; save(); closeSheet(); render(); }
+  else if (a === 'goprem') { if (licOn()) return; const pm = document.getElementById('p-mail'); if (pm && pm.value) sendLead(pm.value.trim()); S.premium = true; recordInterest(); save(); closeSheet(); render(); toast('Premium activado (demo)'); }
+  else if (a === 'unprem') { S.premium = false; S.lic = null; S.licInfo = null; S.licCode = ''; S.licMsg = ''; S.licDraft = ''; S.f.despido = false; save(); closeSheet(); render(); }
+  else if (a === 'lead') {
+    const pm = document.getElementById('p-mail');
+    if (pm && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(pm.value.trim())) { sendLead(pm.value.trim()); recordInterest(); toast('Listo, te contactaremos con los datos de pago'); }
+    else toast('Escribe un correo válido');
+  }
+  else if (a === 'activate') {
+    const el = document.getElementById('p-code'), raw = el ? el.value : '';
+    S.licDraft = raw;
+    licVerify(raw, LIC.pub, iso(new Date())).then(function (r) {
+      if (r.ok) {
+        S.licCode = raw.replace(/\s+/g, ''); S.lic = r; S.licInfo = null; S.premium = true; S.licMsg = ''; S.licDraft = '';
+        save(); closeSheet(); render(); toast('Premium activo hasta el ' + dmy(r.exp));
+      } else { S.licMsg = licMessage(r); openPremium(); }
+    });
+  }
   else if (a === 'close') closeSheet();
   else if (a === 'addw') { if (!S.premium && S.workers.length >= 3) openPremium(); else openAdd(); }
   else if (a === 'savew') {
@@ -973,6 +1074,14 @@ document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !s
   } catch (e) {}
 })();
 render();
+// Con cobro activo, el Premium guardado se vuelve a verificar al abrir la página (firma y vencimiento).
+if (licOn() && S.licCode) {
+  licVerify(S.licCode, LIC.pub, iso(new Date())).then(function (r) {
+    if (r.ok) { S.premium = true; S.lic = r; S.licInfo = null; }
+    else { S.premium = false; S.lic = null; S.licInfo = r; }
+    render();
+  });
+}
 
 </script>
 </body></html>
