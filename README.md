@@ -25,6 +25,8 @@ Cada código es `LQ1.<datos>.<firma>`. Los datos son el correo, el plan (`mensua
 3. Copia la **clave pública** que aparece en pantalla y pégala en `calculadora.html`, en `window.LIQUIDA_LIC`, en el campo `"pub"` (hoy dice `null`).
 4. En el mismo bloque, agrega tus enlaces de pago en `"pay"` (`mensual` y `anual`, deben empezar con `https://`) y, si quieres, tu número de WhatsApp en `"whatsapp"` (con código de país, solo dígitos, por ejemplo `51999888777`).
 
+Si cobras por Yape o Plin, deja `"pay"` vacío y llena `"yape"` (y `"whatsapp"`) con tu número, con código de país y solo dígitos: la hoja de Premium mostrará el monto y el número, y el cliente te enviará el comprobante por WhatsApp.
+
 Mientras `"pub"` sea `null`, Premium sigue en **modo demo** (el botón lo activa gratis). Al poner la clave, el cobro queda activo y el Premium de prueba que cualquiera tenía guardado deja de valer.
 
 **Cada venta**
