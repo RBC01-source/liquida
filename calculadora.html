@@ -54,8 +54,8 @@ svg{display:block}
 .logo rect{fill:var(--accent)} .logo path{stroke:var(--on-accent);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .pchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:.78rem;font-weight:600;color:var(--muted)}
 .pchip b{color:var(--ink)}
-.nav{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--key);padding:4px;border-radius:14px;margin-bottom:14px}
-.nav button{min-height:42px;border-radius:10px;font-weight:700;font-size:.92rem;color:var(--muted)}
+.nav{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--key);padding:4px;border-radius:14px;margin-bottom:14px}
+.nav button{min-height:42px;border-radius:10px;font-weight:700;font-size:.88rem;color:var(--muted)}
 .nav button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
 
 /* ---------- cards & forms ---------- */
@@ -66,7 +66,7 @@ svg{display:block}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .fld{display:grid;gap:5px;min-width:0}
 .fld label,.fld .l{font-size:.82rem;font-weight:700;color:var(--muted)}
-.fld input[type=text],.fld input[type=number],.fld input[type=date],.fld select{width:100%;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:0 12px;font-weight:600}
+.fld input[type=text],.fld input[type=number],.fld input[type=date],.fld input[type=month],.fld select{width:100%;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:0 12px;font-weight:600}
 .fld input.num{font-family:var(--f-mono)}
 .fld .hint{font-size:.76rem;color:var(--muted)}
 .chk{display:flex;gap:10px;align-items:center;min-height:44px;font-weight:600;font-size:.94rem}
@@ -106,8 +106,18 @@ svg{display:block}
 .wlist{display:grid;gap:10px}
 .wrow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
 .wrow b{display:block}
-.wrow small{color:var(--muted)}
-.wrow .acts{display:flex;gap:6px}
+.wrow small{color:var(--muted);display:block}
+.wrow .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+details.adv{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:12px}
+details.adv summary{font-weight:700;font-size:.86rem;color:var(--muted);cursor:pointer}
+details.adv[open] summary{margin-bottom:10px}
+.boleta{display:grid;gap:12px}
+.boleta h3{font-size:1rem;font-weight:800;letter-spacing:-.01em;text-align:center;margin:0}
+.boleta .bh{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.9rem}
+.boleta .bg{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:.84rem;color:var(--muted)}
+.boleta .bg b{color:var(--ink)}
+.boleta .bt{font-size:.74rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.boleta .neto{display:flex;justify-content:space-between;align-items:baseline;gap:12px;background:var(--band);color:var(--on-band);border-radius:12px;padding:12px 14px;font-weight:800}
 .disc{margin-top:18px;color:var(--muted);font-size:.78rem;text-align:center;display:grid;gap:8px;justify-items:center}
 
 /* ---------- sheets & toast ---------- */
@@ -138,6 +148,10 @@ svg{display:block}
   body{background:#fff;color:#000;padding:0}
   .nav,.pchip,.disc,#formcard,.noprint,.toast,.sheet-wrap,[data-act=copy]{display:none!important}
   body.print-plan .wrap > *:not(.keep):not(.top){display:none!important}
+  body.print-boleta #app,body.print-boleta .toast{display:none!important}
+  body.print-boleta .sheet-wrap{display:block!important;position:static;background:none;animation:none}
+  body.print-boleta .sheet{max-height:none;overflow:visible;border-radius:0;padding:0;background:#fff;color:#000;animation:none;
+    --ink:#000;--muted:#444;--line:#bbb;--surface:#fff;--band:#eee;--on-band:#000;--bg:#fff}
   body.print-res #res .btn,body.print-res #res .grid2{display:none!important}
   .card{box-shadow:none}
 }
@@ -279,6 +293,128 @@ function sueldoNeto(o) {
   const pen = r2(c * rate);
   return { comp: c, anual: r2(anual), neta: r2(neta), taxAnual: r2(tax), ret: ret, pen: pen, neto: r2(c - pen - ret) };
 }
+
+/* ---------- Planilla mensual: régimen general (D. Leg. 728, TUO D.S. 003-97-TR) ---------- */
+const AFP = {
+  habitat:   { n: 'AFP Habitat',   flujo: 1.47 },
+  integra:   { n: 'AFP Integra',   flujo: 1.55 },
+  prima:     { n: 'Prima AFP',     flujo: 1.60 },
+  profuturo: { n: 'Profuturo AFP', flujo: 1.69 }
+};
+// Aporte obligatorio 10% y prima de seguro 1.37% (SBS, 1.er semestre 2026). El tope se actualiza cada trimestre.
+const AFP_APORTE = 10, AFP_PRIMA = 1.37, AFP_TOPE = 12598.91, ESSALUD = 0.09;
+// Divisores SUNAT para la retención de 5.ª categoría (enero a diciembre; diciembre regulariza el saldo).
+const DIV5 = [12, 12, 12, 9, 8, 8, 8, 5, 4, 4, 4, 1];
+// Cuántos meses (desde enero) de retenciones ya practicadas se restan al impuesto anual en cada mes:
+// ene–mar: ninguno · abr: ene–mar · may–jul: ene–abr · ago: ene–jul · set–nov: ene–ago · dic: ene–nov.
+const SUB5 = [0, 0, 0, 3, 4, 4, 4, 7, 8, 8, 8, 11];
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'setiembre', 'octubre', 'noviembre', 'diciembre'];
+function parseP(p) { const a = String(p || '').split('-').map(Number); return { y: a[0] || 0, m: (a[1] >= 1 && a[1] <= 12) ? a[1] : 1 }; }
+function periodLabel(p) { const P = parseP(p); return MESES[P.m - 1].charAt(0).toUpperCase() + MESES[P.m - 1].slice(1) + ' ' + P.y; }
+function num0(x) { x = Number(x); return (isFinite(x) && x > 0) ? x : 0; }
+function opt(x) { return (x === '' || x == null) ? null : num0(x); }
+
+// Retención mensual de 5.ª categoría según el procedimiento de SUNAT.
+//  base anual = remuneración fija × meses que faltan (incluido el actual) + lo percibido en meses previos
+//               + gratificaciones ordinarias de julio y diciembre (con bonificación extraordinaria)
+//               + variables pagadas en el mes (horas extras, bonos: no se proyectan)
+//  impuesto anual → (impuesto − retenciones previas) ÷ divisor del mes
+// remPrev = remuneraciones ordinarias percibidas de enero al mes anterior; retPrev = retenciones de los meses
+// que SUNAT manda restar ese mes (ver SUB5). Si no se informan, se asume que el trabajador cobró lo mismo todo el año.
+function ret5ta(o) {
+  const m = o.m, bon = o.eps ? 0.0675 : 0.09, rem = o.rem;
+  const grat = 2 * rem * (1 + bon);
+  const prev = o.remPrev == null ? rem * (m - 1) : o.remPrev;
+  const rba = rem * (13 - m) + prev + grat + (o.varMes || 0);
+  const neta = Math.max(0, rba - 7 * UIT);
+  const T = bracketTax(neta);
+  let acum;
+  if (o.retPrev == null) {
+    const Tk = bracketTax(Math.max(0, 12 * rem + grat - 7 * UIT)), rets = [];
+    for (let k = 1; k <= SUB5[m - 1]; k++) {
+      const s = rets.slice(0, SUB5[k - 1]).reduce(function (a, x) { return a + x; }, 0);
+      rets.push(Math.max(0, (Tk - s) / DIV5[k - 1]));
+    }
+    acum = rets.reduce(function (a, x) { return a + x; }, 0);
+  } else acum = o.retPrev;
+  const ret = Math.max(0, (T - acum) / DIV5[m - 1]);
+  return { rba: r2(rba), neta: r2(neta), anual: r2(T), acum: r2(acum), div: DIV5[m - 1], ret: r2(ret) };
+}
+
+// Boleta de pago de un trabajador del régimen general para un mes (period = 'AAAA-MM').
+// nov: { faltas, tardanza, he25, he35, bonos, otros, mesesSem, remPrev, retPrev }
+function boleta(w, nov, period) {
+  nov = nov || {};
+  const m = parseP(period).m;
+  const sueldo = num0(w.sueldo), asig = w.asig ? ASIG : 0, base = sueldo + asig;
+  const faltas = Math.min(30, num0(nov.faltas)), dias = 30 - faltas;
+  const vh = base / 30 / 8;                                  // valor hora ordinaria
+  const sem = nov.mesesSem === '' || nov.mesesSem == null ? 6 : Math.min(6, num0(nov.mesesSem));
+  const bas = sueldo / 30 * dias, asg = asig / 30 * dias;
+  const h25 = num0(nov.he25), h35 = num0(nov.he35);
+  const he25 = h25 * vh * 1.25, he35 = h35 * vh * 1.35, bonos = num0(nov.bonos);
+  const tard = num0(nov.tardanza), tardDesc = Math.min(tard * vh / 60, bas + asg + he25 + he35 + bonos);
+  const afecta = Math.max(0, bas + asg + he25 + he35 + bonos - tardDesc);   // base de pensión, EsSalud y 5.ª
+  const ing = [], des = [];
+  function put(arr, k, l, v) { if (r2(v) !== 0) arr.push({ k: k, l: l, v: r2(v) }); }
+  put(ing, 'bas', 'Remuneración básica (' + dias + ' días)', bas);
+  put(ing, 'asg', 'Asignación familiar', asg);
+  put(ing, 'he25', 'Horas extras 25% (' + h25 + ' h)', he25);
+  put(ing, 'he35', 'Horas extras 35% (' + h35 + ' h)', he35);
+  put(ing, 'bonos', 'Bonos y comisiones', bonos);
+  let gratTot = 0;
+  if (m === 7 || m === 12) {
+    const g = gratificacion({ sueldo: sueldo, asig: !!w.asig, varProm: 0, reg: 'general', meses: sem, eps: !!w.eps });
+    put(ing, 'gr', 'Gratificación (' + sem + '/6)', g.base);
+    put(ing, 'bon', 'Bonificación extraordinaria ' + (w.eps ? '6.75%' : '9%'), g.bon);
+    gratTot = g.total;
+  }
+  const totalIng = r2(ing.reduce(function (a, i) { return a + i.v; }, 0));
+  // Pensión: la gratificación no está afecta.
+  let pen = 0;
+  const sist = w.pension || 'afp';
+  if (sist === 'onp') {
+    put(des, 'onp', 'ONP (13%)', afecta * 0.13);
+  } else if (sist === 'afp') {
+    const a = AFP[w.afp] || AFP.integra, com = w.comision === 'mixta' ? 0 : a.flujo, bs = Math.min(afecta, AFP_TOPE);
+    put(des, 'afp1', a.n + ': aporte obligatorio (' + AFP_APORTE + '%)', bs * AFP_APORTE / 100);
+    put(des, 'afp2', a.n + ': comisión (' + com + '%)', bs * com / 100);
+    put(des, 'afp3', a.n + ': prima de seguro (' + AFP_PRIMA + '%)', bs * AFP_PRIMA / 100);
+  }
+  des.forEach(function (d) { pen += d.v; });
+  pen = r2(pen);
+  const rt = ret5ta({ m: m, rem: base, eps: !!w.eps, varMes: he25 + he35 + bonos, remPrev: opt(nov.remPrev), retPrev: opt(nov.retPrev) });
+  // La retención no puede superar lo que cobra el trabajador en el mes (después de pensión).
+  const retTope = Math.max(0, r2(totalIng - pen - num0(nov.otros) - tardDesc));
+  const capRet = rt.ret > retTope;
+  if (capRet) rt.ret = retTope;
+  put(des, 'r5', 'Impuesto a la renta 5.ª categoría', rt.ret);
+  put(des, 'tard', 'Tardanzas (' + tard + ' min)', tardDesc);
+  put(des, 'otros', 'Otros descuentos', num0(nov.otros));
+  const totalDes = r2(des.reduce(function (a, d) { return a + d.v; }, 0));
+  const essalud = r2(ESSALUD * Math.max(afecta, RMV * dias / 30));
+  let ctsDep = 0;
+  if (m === 5 || m === 11) ctsDep = cts({ sueldo: sueldo, asig: !!w.asig, varProm: 0, reg: 'general', meses: sem, dias: 0, gratiLast: '' }).total;
+  return { m: m, dias: dias, ing: ing, des: des, totalIng: totalIng, totalDes: totalDes, neto: r2(totalIng - totalDes),
+    afecta: r2(afecta), pen: pen, ret: rt.ret, rt: rt, capRet: capRet, tardDesc: r2(tardDesc), otros: r2(num0(nov.otros)), grat: r2(gratTot),
+    essalud: essalud, ctsDep: ctsDep, costo: r2(totalIng + essalud) };
+}
+
+function planillaMes(workers, novs, period) {
+  novs = novs || {};
+  const rows = [], excl = [];
+  workers.forEach(function (w) {
+    if (w.reg !== 'general') { excl.push(w); return; }
+    rows.push({ w: w, b: boleta(w, novs[w.id], period) });
+  });
+  const t = { ing: 0, des: 0, neto: 0, pen: 0, ret: 0, otros: 0, essalud: 0, costo: 0, cts: 0, grat: 0 };
+  rows.forEach(function (r) {
+    t.ing += r.b.totalIng; t.des += r.b.totalDes; t.neto += r.b.neto; t.pen += r.b.pen; t.ret += r.b.ret;
+    t.otros += r.b.otros + r.b.tardDesc; t.essalud += r.b.essalud; t.costo += r.b.costo; t.cts += r.b.ctsDep; t.grat += r.b.grat;
+  });
+  Object.keys(t).forEach(function (k) { t[k] = r2(t[k]); });
+  return { rows: rows, excl: excl, t: t, m: parseP(period).m };
+}
 /*ENDPURE*/
 
 /* ------------------------------ UI ------------------------------ */
@@ -290,20 +426,26 @@ function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padSta
 const today = new Date(), ago = new Date(today.getFullYear() - 2, today.getMonth(), 1);
 let S = {
   plan: 'anual', premium: false, tab: 'calc', calc: 'grati', workers: [],
+  period: iso(today).slice(0, 7), nov: {}, empresa: { name: '', ruc: '' },
   f: { sueldo: 2500, asig: false, varProm: 0, reg: 'general', eps: false, meses: 6, dias: 0, gratiLast: '',
        modo: 'trunca', diasGoce: 15, ingreso: iso(ago), cese: iso(today), vencidos: 0, despido: false, monto: 5000, susp: false, pension: 'afp', afpPct: 12.5 }
 };
 try {
   const j = JSON.parse(localStorage.getItem(KEY) || 'null');
-  if (j) { S.premium = !!j.premium; S.workers = Array.isArray(j.workers) ? j.workers : []; S.calc = j.calc || S.calc; Object.assign(S.f, j.f || {}); }
+  if (j) {
+    S.premium = !!j.premium; S.workers = Array.isArray(j.workers) ? j.workers : []; S.calc = j.calc || S.calc; Object.assign(S.f, j.f || {});
+    if (j.nov && typeof j.nov === 'object') S.nov = j.nov;
+    if (j.empresa && typeof j.empresa === 'object') S.empresa = { name: String(j.empresa.name || ''), ruc: String(j.empresa.ruc || '') };
+  }
 } catch (e) {}
 let DB = null, UID = null, IS_OWNER = false, syncT = null;
+function localBlob() { return JSON.stringify({ premium: S.premium, workers: S.workers, f: S.f, calc: S.calc, nov: S.nov, empresa: S.empresa }); }
 function save() {
-  try { localStorage.setItem(KEY, JSON.stringify({ premium: S.premium, workers: S.workers, f: S.f, calc: S.calc })); } catch (e) {}
+  try { localStorage.setItem(KEY, localBlob()); } catch (e) {}
   if (DB && UID) {
     clearTimeout(syncT);
     syncT = setTimeout(function () {
-      DB.doc('data/users/' + UID + '/state').set({ premium: S.premium, workers: S.workers, savedAt: Date.now() }).catch(function () {});
+      DB.doc('data/users/' + UID + '/state').set({ premium: S.premium, workers: S.workers, nov: S.nov, empresa: S.empresa, savedAt: Date.now() }).catch(function () {});
     }, 800);
   }
 }
@@ -339,7 +481,9 @@ function loadStats() {
       const c = snap.data() || {};
       if (!S.workers.length && Array.isArray(c.workers)) S.workers = c.workers;
       if (c.premium) S.premium = true;
-      try { localStorage.setItem(KEY, JSON.stringify({ premium: S.premium, workers: S.workers, f: S.f, calc: S.calc })); } catch (e) {}
+      if (!Object.keys(S.nov).length && c.nov && typeof c.nov === 'object') S.nov = c.nov;
+      if (!S.empresa.name && !S.empresa.ruc && c.empresa) S.empresa = { name: String(c.empresa.name || ''), ruc: String(c.empresa.ruc || '') };
+      try { localStorage.setItem(KEY, localBlob()); } catch (e) {}
     }
     render(); loadStats();
   } catch (e) {}
@@ -549,25 +693,51 @@ function teamStats(w) {
   const g = gratificacion(Object.assign({ meses: 6, eps: false }, o)), c = cts(Object.assign({ meses: 6, dias: 0, gratiLast: '' }, o));
   return { g: g.total, c: c.total };
 }
-function planRows() {
-  const pen = S.f.pension, afp = Number(S.f.afpPct) || 0;
-  const rows = S.workers.map(function (w) {
-    const st = teamStats(w);
-    const n = sueldoNeto({ sueldo: w.sueldo, asig: w.asig, varProm: 0, reg: w.reg, pension: pen, afpPct: afp });
-    return { name: w.name, reg: REG[w.reg].n, sueldo: w.sueldo, bruto: n.comp, pen: n.pen, ret: n.ret, neto: n.neto, g: st.g, c: st.c };
-  });
-  return rows;
+function sistLabel(w) {
+  const s = w.pension || 'afp';
+  if (s === 'onp') return 'ONP 13%';
+  if (s === 'none') return 'Sin pensión';
+  return (AFP[w.afp] || AFP.integra).n + (w.comision === 'mixta' ? ' (mixta)' : '');
 }
-function planillaHTML() {
-  const rows = planRows(); let t = { bruto: 0, pen: 0, ret: 0, neto: 0, g: 0, c: 0 };
-  let h = '<section class="card keep" id="plan"><h2>Planilla del mes</h2><p class="sub">Calculada con el sistema de pensiones elegido en «Sueldo neto» (' + (S.f.pension === 'onp' ? 'ONP 13%' : S.f.pension === 'afp' ? 'AFP ' + (Number(S.f.afpPct) || 0) + '%' : 'sin pensión') + ').</p><div class="tbl">';
-  rows.forEach(function (r) {
-    ['bruto', 'pen', 'ret', 'neto', 'g', 'c'].forEach(function (k) { t[k] += r[k]; });
-    h += '<div class="tr"><span>' + esc(r.name) + '<br><small class="fine">Bruto ' + fmt(r.bruto) + ' · Pensión ' + fmt(r.pen) + ' · 5.ª ' + fmt(r.ret) + '</small></span><span class="num">' + fmt(r.neto) + '</span></div>';
+function nvOf(id) { return (S.nov[S.period] || {})[id] || {}; }
+function planBlock() { return planillaMes(S.workers, S.nov[S.period] || {}, S.period); }
+function monthsBefore(m, n) { return n === 0 ? '' : (n === 1 ? 'enero' : 'enero a ' + MESES[n - 1]); }
+function planillaView() {
+  const pm = planBlock(), P = parseP(S.period), t = pm.t, lab = periodLabel(S.period);
+  let h = '<section class="card"><div><h2>Planilla mensual</h2><p class="sub">Régimen laboral general (D. Leg. 728, TUO D.S. 003-97-TR). Registra las novedades del mes de cada trabajador para obtener la planilla y las boletas de pago.</p></div>' +
+    '<div class="fld"><label for="pl-period">Mes de la planilla</label><input id="pl-period" type="month" data-act-change="period" value="' + esc(S.period) + '"></div>' +
+    '<div class="grid2"><div class="fld"><label for="emp-name">Empleador (para la boleta)</label><input id="emp-name" type="text" maxlength="60" autocomplete="organization" data-emp="name" value="' + esc(S.empresa.name) + '"></div>' +
+    '<div class="fld"><label for="emp-ruc">RUC</label><input id="emp-ruc" type="text" inputmode="numeric" maxlength="11" data-emp="ruc" value="' + esc(S.empresa.ruc) + '"></div></div></section>';
+  if (!pm.rows.length) {
+    h += '<section class="card"><h2>Aún no hay trabajadores en planilla</h2><p class="sub">' + (pm.excl.length ? 'La planilla completa cubre el régimen general. Los trabajadores guardados en REMYPE no se incluyen.' : 'Agrega a tus trabajadores en la pestaña «Equipo» y vuelve aquí.') + '</p><button type="button" class="btn block" data-act="tab" data-v="team">Ir a Equipo</button></section>';
+    return h;
+  }
+  h += '<section class="card"><h2>Trabajadores · ' + esc(lab) + '</h2><div class="wlist">';
+  pm.rows.forEach(function (r) {
+    const flag = Object.keys(nvOf(r.w.id)).some(function (k) { return nvOf(r.w.id)[k] !== '' && Number(nvOf(r.w.id)[k]) !== 0 && k !== 'mesesSem'; });
+    h += '<div class="wrow"><div><b>' + esc(r.w.name) + '</b><small>' + sistLabel(r.w) + ' · ' + r.b.dias + ' días' + (flag ? ' · con novedades' : '') + '</small><small>Neto <b class="num" style="display:inline">' + fmt(r.b.neto) + '</b></small></div>' +
+      '<div class="acts"><button type="button" class="btn sm ghost" data-act="nov" data-id="' + r.w.id + '">Novedades</button>' +
+      '<button type="button" class="btn sm ghost" data-act="boleta" data-id="' + r.w.id + '">' + (S.premium ? '' : ICON.lock + ' ') + 'Boleta</button></div></div>';
   });
-  h += '<div class="tr tot"><span>Neto total a pagar</span><span class="num">' + fmt(r2(t.neto)) + '</span></div></div>' +
-    '<p class="fine">Provisión mensual aproximada de gratificación y CTS (1/6 de cada semestre): ' + fmt(r2((t.g + t.c) / 6)) + '</p>' +
-    '<div class="grid2 noprint"><button type="button" class="btn ghost" data-act="csv-plan">Descargar Excel (CSV)</button><button type="button" class="btn ghost" data-act="pdf-plan">Guardar como PDF</button></div></section>';
+  h += '</div>';
+  if (pm.excl.length) h += '<div class="note">' + ICON.info + '<span>' + pm.excl.length + ' trabajador(es) en REMYPE no se incluyen: esta planilla aplica al régimen general.</span></div>';
+  h += '</section>';
+  h += '<section class="card keep" id="plan"><div><h2>Resumen de ' + esc(lab) + '</h2></div><div class="tbl">' +
+    '<div class="tr"><span>Total ingresos' + (t.grat ? ' (incl. gratificación ' + fmt(t.grat) + ')' : '') + '</span><span class="num">' + fmt(t.ing) + '</span></div>' +
+    '<div class="tr neg"><span>Pensiones retenidas (AFP / ONP)</span><span class="num">' + fmt(-t.pen) + '</span></div>' +
+    '<div class="tr neg"><span>Retención de 5.ª categoría</span><span class="num">' + fmt(-t.ret) + '</span></div>' +
+    (t.otros ? '<div class="tr neg"><span>Tardanzas y otros descuentos</span><span class="num">' + fmt(-t.otros) + '</span></div>' : '') +
+    '<div class="tr tot"><span>Neto total a pagar</span><span class="num">' + fmt(t.neto) + '</span></div>' +
+    '<div class="tr"><span>EsSalud a cargo del empleador (9%)</span><span class="num">' + fmt(t.essalud) + '</span></div>' +
+    '<div class="tr tot"><span>Costo laboral del mes</span><span class="num">' + fmt(t.costo) + '</span></div>' +
+    (t.cts ? '<div class="tr"><span>CTS a depositar (hasta el 15 de ' + (P.m === 5 ? 'mayo' : 'noviembre') + ')</span><span class="num">' + fmt(t.cts) + '</span></div>' : '') +
+    '</div>' +
+    '<p class="fine">Por pagar: ' + fmt(r2(t.pen)) + ' a AFP/ONP y ' + fmt(t.ret) + ' a SUNAT (retención retenida a los trabajadores), más EsSalud del empleador.</p>';
+  const caps = pm.rows.filter(function (r) { return r.b.capRet; });
+  if (caps.length) h += '<div class="note">' + ICON.info + '<span>En ' + caps.map(function (r) { return esc(r.w.name); }).join(', ') + ' la retención de 5.ª categoría se limitó a lo que cobra en el mes.</span></div>';
+  h += '<div class="note">' + ICON.info + '<span>Retención de 5.ª categoría con el procedimiento de SUNAT. Si el trabajador ingresó durante el año o cambió de sueldo, completa los acumulados en «Novedades».</span></div>';
+  h += (siteMode() ? (S.premium ? '<div class="grid2 noprint"><button type="button" class="btn ghost" data-act="csv-plan">Descargar Excel (CSV)</button><button type="button" class="btn ghost" data-act="pdf-plan">Guardar como PDF</button></div>'
+    : '<button type="button" class="btn ghost block noprint" data-act="prem">' + ICON.lock + ' Exportar planilla y boletas (Premium)</button>') : '') + '</section>';
   return h;
 }
 function teamView() {
@@ -576,14 +746,12 @@ function teamView() {
   let tg = 0, tc = 0;
   S.workers.forEach(function (w) {
     const st = teamStats(w); tg += st.g; tc += st.c;
-    h += '<div class="wrow"><div><b>' + esc(w.name) + '</b><small>' + fmt(w.sueldo) + ' · ' + REG[w.reg].n + '</small><small>Grati. semestre ' + fmt(st.g) + ' · CTS semestre ' + fmt(st.c) + '</small></div>' +
-      '<div class="acts"><button type="button" class="btn sm ghost" data-act="use" data-id="' + w.id + '">Usar</button><button type="button" class="ib" aria-label="Quitar a ' + esc(w.name) + '" data-act="del" data-id="' + w.id + '">' + ICON.close + '</button></div></div>';
+    h += '<div class="wrow"><div><b>' + esc(w.name) + '</b><small>' + fmt(w.sueldo) + ' · ' + REG[w.reg].n + (w.reg === 'general' ? ' · ' + sistLabel(w) : '') + '</small><small>Grati. semestre ' + fmt(st.g) + ' · CTS semestre ' + fmt(st.c) + '</small></div>' +
+      '<div class="acts"><button type="button" class="btn sm ghost" data-act="use" data-id="' + w.id + '">Usar</button><button type="button" class="btn sm ghost" data-act="editw" data-id="' + w.id + '">Editar</button><button type="button" class="ib" aria-label="Quitar a ' + esc(w.name) + '" data-act="del" data-id="' + w.id + '">' + ICON.close + '</button></div></div>';
   });
   h += '</div><button type="button" class="btn block" data-act="addw">Agregar trabajador</button>' +
-    '<p class="fine center">' + (S.premium ? 'Premium: trabajadores ilimitados' : 'Gratis: ' + S.workers.length + ' de 3 trabajadores') + '</p></section>';
-  if (S.premium && siteMode() && S.workers.length) {
-    h += planillaHTML();
-  }
+    '<p class="fine center">' + (S.premium ? 'Premium: trabajadores ilimitados' : 'Gratis: ' + S.workers.length + ' de 3 trabajadores') + '</p>' +
+    (S.workers.length ? '<button type="button" class="btn ghost block" data-act="tab" data-v="plan">Ver planilla del mes</button>' : '') + '</section>';
   if (S.premium) {
     h += '<section class="card"><h2>Costo de planilla por semestre</h2><div class="tbl"><div class="tr"><span>Gratificaciones (con bonif.)</span><span class="num">' + fmt(r2(tg)) + '</span></div>' +
       '<div class="tr"><span>CTS</span><span class="num">' + fmt(r2(tc)) + '</span></div><div class="tr tot"><span>Total estimado</span><span class="num">' + fmt(r2(tg + tc)) + '</span></div></div></section>';
@@ -595,7 +763,11 @@ function teamView() {
 function guideView() {
   const rows = [['Remuneración Mínima Vital', 'S/ 1,230 (desde el 1 de oct. 2026)'], ['Asignación familiar (10% RMV)', 'S/ ' + ASIG.toFixed(2)], ['UIT 2026', fmt(UIT)],
     ['Gratificaciones', 'Jul. y dic. · 1 sueldo + 9% (EsSalud) o 6.75% (EPS)'], ['CTS', 'Depósito hasta 15 may. y 15 nov. · 1/12 por mes'], ['Vacaciones', '30 días (general) · 15 días (REMYPE)'],
-    ['Retención 4.ª categoría', '8% si el honorario supera S/ 3,000 al mes'], ['Pensión', 'ONP 13% · AFP ≈ 12–13% (varía)'], ['Renta 5.ª categoría', 'Se deducen 7 UIT; tramos 8%, 14%, 17%, 20%, 30%'], ['Despido arbitrario', '1.5 sueldos por año, tope 12 (general)']];
+    ['Retención 4.ª categoría', '8% si el honorario supera S/ 3,000 al mes'], ['Pensión', 'ONP 13% · AFP ≈ 12–13% (varía)'], ['Renta 5.ª categoría', 'Se deducen 7 UIT; tramos 8%, 14%, 17%, 20%, 30%'], ['Despido arbitrario', '1.5 sueldos por año, tope 12 (general)'],
+    ['Planilla: AFP', 'Aporte 10% + prima 1.37% + comisión según AFP · tope referencial S/ ' + AFP_TOPE.toLocaleString('en-US') + ' (SBS, abr.–jun. 2026)'],
+    ['Planilla: EsSalud', '9% a cargo del empleador; no aplica a la gratificación'],
+    ['Planilla: horas extras', '25% las 2 primeras horas · 35% desde la 3.ª · valor hora = remuneración ÷ 30 ÷ 8'],
+    ['Planilla: retención 5.ª', 'Divisores SUNAT: ene–mar 12 · abr 9 · may–jul 8 · ago 5 · set–nov 4 · dic saldo']];
   let h = '<section class="card"><h2>Reglas que usa Liquida</h2><div class="tbl">';
   rows.forEach(function (r) { h += '<div class="tr"><span>' + r[0] + '</span><span class="num" style="text-align:right;white-space:normal;font-size:.8rem">' + r[1] + '</span></div>'; });
   h += '</div></section>';
@@ -611,9 +783,9 @@ function render() {
   const t = S.tab;
   let h = '<header class="top"><div class="brand"><svg class="logo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9"/><path d="M9 24V10M9 10h7a4 4 0 010 8H9M17 18l7 6"/></svg><div>Liquida<small>Beneficios laborales Perú</small></div></div>' +
     '<button type="button" class="pchip" data-act="prem" aria-label="Plan">' + (S.premium ? '<b>Premium</b>' : 'Plan <b>Gratis</b>') + '</button></header>' +
-    '<nav class="nav" role="tablist">' + [['calc', 'Calcular'], ['team', 'Equipo'], ['guide', 'Guía']].map(function (x) {
+    '<nav class="nav" role="tablist">' + [['calc', 'Calcular'], ['team', 'Equipo'], ['plan', 'Planilla'], ['guide', 'Guía']].map(function (x) {
       return '<button type="button" role="tab" data-act="tab" data-v="' + x[0] + '" aria-selected="' + (t === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</nav>';
-  h += t === 'calc' ? calcView() : t === 'team' ? teamView() : guideView();
+  h += t === 'calc' ? calcView() : t === 'team' ? teamView() : t === 'plan' ? planillaView() : guideView();
   h += '<footer class="disc"><span>Cálculos referenciales, no constituyen asesoría legal ni financiera.</span></footer>';
   app.innerHTML = h;
 }
@@ -622,23 +794,88 @@ function openSheet(html) { sheet.innerHTML = '<div class="sheet" role="dialog" a
 function closeSheet() { sheet.hidden = true; sheet.innerHTML = ''; }
 function openPremium() {
   openSheet('<div class="sh-top"><h2>Liquida Premium</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>' +
-    '<ul class="list"><li>' + ICON.check + '<span>Trabajadores ilimitados (gratis: hasta 3)</span></li><li>' + ICON.check + '<span>Indemnización por despido arbitrario en la liquidación</span></li><li>' + ICON.check + '<span>Totales de planilla por semestre</span></li>' + (siteMode() ? '<li>' + ICON.check + '<span>Exportar a PDF y Excel, y planilla del mes para tu equipo</span></li>' : '') + '</ul>' +
+    '<ul class="list"><li>' + ICON.check + '<span>Trabajadores ilimitados (gratis: hasta 3)</span></li><li>' + ICON.check + '<span>Indemnización por despido arbitrario en la liquidación</span></li><li>' + ICON.check + '<span>Totales de planilla por semestre</span></li>' + (siteMode() ? '<li>' + ICON.check + '<span>Boletas de pago imprimibles y planilla mensual en PDF y Excel</span></li>' : '') + '</ul>' +
     '<div class="plans"><button type="button" class="plan" data-act="plan" data-v="mensual" aria-pressed="' + (S.plan === 'mensual') + '"><span>Mensual</span><b>S/ 9.90</b></button><button type="button" class="plan" data-act="plan" data-v="anual" aria-pressed="' + (S.plan === 'anual') + '"><span>Anual</span><b>S/ 79</b><em>Ahorra 33%</em></button></div>' +
     (!S.premium && window.LIQUIDA_CFG ? '<div class="fld"><label for="p-mail">Tu correo (te avisamos cuando abra la suscripción)</label><input id="p-mail" type="email" autocomplete="email" placeholder="tucorreo@ejemplo.com"></div>' : '') + (S.premium ? '<button type="button" class="btn ghost block" data-act="unprem">Volver al plan gratis</button>' : '<button type="button" class="btn block" data-act="goprem">Probar Premium y reservar mi lugar</button>') +
     '<p class="fine center">Aún no hay cobro: activas Premium de prueba y registramos tu interés en el plan elegido para avisarte cuando abra la suscripción.</p>');
 }
-function openAdd() {
-  openSheet('<div class="sh-top"><h2>Nuevo trabajador</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>' +
-    '<div class="fld"><label for="n-name">Nombre</label><input id="n-name" type="text" maxlength="40" autocomplete="off"></div>' +
-    '<div class="fld"><label for="n-sueldo">Sueldo mensual (S/)</label><input id="n-sueldo" class="num" type="number" inputmode="decimal" min="0" value="' + (Number(S.f.sueldo) || 0) + '"></div>' +
-    '<label class="chk"><input type="checkbox" id="n-asig"> Recibe asignación familiar</label>' +
-    '<div class="fld"><label for="n-reg">Régimen</label><select id="n-reg">' + Object.keys(REG).map(function (k) { return '<option value="' + k + '">' + REG[k].n + '</option>'; }).join('') + '</select></div>' +
-    '<button type="button" class="btn block" data-act="savew">Guardar</button>');
+function findW(id) { return S.workers.filter(function (x) { return x.id === id; })[0]; }
+function selOpt(v, t, cur) { return '<option value="' + v + '"' + (cur === v ? ' selected' : '') + '>' + t + '</option>'; }
+function openAdd(id) {
+  const w = id ? findW(id) : null;
+  const d = w || { name: '', dni: '', sueldo: Number(S.f.sueldo) || 0, asig: false, reg: 'general', pension: 'afp', afp: 'integra', comision: 'flujo', eps: false };
+  const pen = d.pension || 'afp', afp = d.afp || 'integra', com = d.comision || 'flujo';
+  openSheet('<div class="sh-top"><h2>' + (w ? 'Editar trabajador' : 'Nuevo trabajador') + '</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>' +
+    '<div class="fld"><label for="n-name">Nombre</label><input id="n-name" type="text" maxlength="40" autocomplete="off" value="' + esc(d.name) + '"></div>' +
+    '<div class="fld"><label for="n-dni">DNI (opcional, para la boleta)</label><input id="n-dni" type="text" inputmode="numeric" maxlength="12" autocomplete="off" value="' + esc(d.dni || '') + '"></div>' +
+    '<div class="fld"><label for="n-sueldo">Sueldo mensual (S/)</label><input id="n-sueldo" class="num" type="number" inputmode="decimal" min="0" value="' + (Number(d.sueldo) || 0) + '"></div>' +
+    '<label class="chk"><input type="checkbox" id="n-asig"' + (d.asig ? ' checked' : '') + '> Recibe asignación familiar</label>' +
+    '<div class="fld"><label for="n-reg">Régimen</label><select id="n-reg">' + Object.keys(REG).map(function (k) { return selOpt(k, REG[k].n, d.reg); }).join('') + '</select><span class="hint">La planilla mensual aplica al régimen general (D. Leg. 728).</span></div>' +
+    '<div class="fld"><label for="n-pension">Sistema de pensiones</label><select id="n-pension">' + selOpt('afp', 'AFP', pen) + selOpt('onp', 'ONP (13%)', pen) + selOpt('none', 'Ninguno', pen) + '</select></div>' +
+    '<div class="grid2" id="n-afpbox"' + (pen === 'afp' ? '' : ' hidden') + '><div class="fld"><label for="n-afp">AFP</label><select id="n-afp">' +
+      Object.keys(AFP).map(function (k) { return selOpt(k, AFP[k].n + ' (flujo ' + AFP[k].flujo + '%)', afp); }).join('') + '</select></div>' +
+    '<div class="fld"><label for="n-com">Tipo de comisión</label><select id="n-com">' + selOpt('flujo', 'Sobre flujo', com) + selOpt('mixta', 'Mixta (sin flujo)', com) + '</select></div></div>' +
+    '<label class="chk"><input type="checkbox" id="n-eps"' + (d.eps ? ' checked' : '') + '> Tiene EPS (bonificación 6.75%)</label>' +
+    '<button type="button" class="btn block" data-act="savew" data-id="' + (w ? esc(w.id) : '') + '">Guardar</button>');
   setTimeout(function () { const e = document.getElementById('n-name'); if (e) e.focus(); }, 30);
+}
+function openNov(id) {
+  const w = findW(id); if (!w) return;
+  const N = nvOf(id), m = parseP(S.period).m;
+  const f = function (k, label, hint) {
+    return '<div class="fld"><label for="nv-' + k + '">' + label + '</label><input id="nv-' + k + '" class="num" type="number" inputmode="decimal" step="any" min="0" placeholder="0" value="' + (N[k] == null ? '' : esc(N[k])) + '">' +
+      (hint ? '<span class="hint">' + hint + '</span>' : '') + '</div>';
+  };
+  let sem = '';
+  if (m === 5 || m === 7 || m === 11 || m === 12) {
+    let o = ''; const cur = (N.mesesSem === '' || N.mesesSem == null) ? 6 : Number(N.mesesSem);
+    for (let i = 6; i >= 0; i--) o += '<option value="' + i + '"' + (cur === i ? ' selected' : '') + '>' + i + '</option>';
+    sem = '<div class="fld"><label for="nv-mesesSem">Meses completos del semestre</label><select id="nv-mesesSem">' + o + '</select><span class="hint">' + (m === 5 || m === 11 ? 'Se usa para el depósito de la CTS.' : 'Se usa para la gratificación.') + '</span></div>';
+  }
+  let adv = '';
+  const nPrev = SUB5[m - 1];
+  if (m > 1) {
+    adv = '<details class="adv"' + ((N.remPrev !== '' && N.remPrev != null) || (N.retPrev !== '' && N.retPrev != null) ? ' open' : '') + '><summary>Acumulados del año para la retención de 5.ª categoría (opcional)</summary>' +
+      f('remPrev', 'Remuneraciones percibidas de ' + monthsBefore(m, m - 1) + ' (S/)', 'Sin gratificaciones. Vacío = se asume el mismo sueldo todo el año. Complétalo si ingresó o cambió de sueldo durante el año.') +
+      (nPrev > 0 ? f('retPrev', 'Retenciones de ' + monthsBefore(m, nPrev) + ' (S/)', 'SUNAT resta estas retenciones en ' + MESES[m - 1] + '. Vacío = se estiman.') : '<p class="fine">En ' + MESES[m - 1] + ' SUNAT no resta retenciones previas.</p>') + '</details>';
+  }
+  openSheet('<div class="sh-top"><h2>Novedades · ' + esc(w.name) + '</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>' +
+    '<p class="sub">' + esc(periodLabel(S.period)) + ' · ' + esc(sistLabel(w)) + '</p>' +
+    '<div class="grid2">' + f('faltas', 'Días sin goce de haber', 'Faltas, licencias sin goce, ingreso o cese en el mes') + f('tardanza', 'Tardanzas (minutos)') + '</div>' +
+    '<div class="grid2">' + f('he25', 'Horas extras al 25%', 'Primeras 2 horas diarias') + f('he35', 'Horas extras al 35%', 'Desde la 3.ª hora') + '</div>' +
+    '<div class="grid2">' + f('bonos', 'Bonos o comisiones (S/)', 'Afectos a pensión y EsSalud') + f('otros', 'Otros descuentos (S/)', 'Adelantos, préstamos, judiciales') + '</div>' +
+    sem + adv +
+    '<div class="acts-col"><button type="button" class="btn block" data-act="savenov" data-id="' + esc(id) + '">Guardar novedades</button>' +
+    '<button type="button" class="btn ghost block" data-act="clearnov" data-id="' + esc(id) + '">Limpiar novedades del mes</button></div>');
+}
+function openBoleta(id) {
+  const w = findW(id); if (!w) return;
+  const b = boleta(w, nvOf(id), S.period);
+  const tbl = function (arr) {
+    return arr.length ? '<div class="tbl">' + arr.map(function (x) { return '<div class="tr"><span>' + esc(x.l) + '</span><span class="num">' + fmt(x.v) + '</span></div>'; }).join('') + '</div>' : '<p class="fine">Sin conceptos.</p>';
+  };
+  openSheet('<div class="sh-top noprint"><h2>Boleta de pago</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>' +
+    '<div class="boleta"><div class="bh"><b>' + esc(S.empresa.name || 'Empleador') + '</b><span>RUC: ' + esc(S.empresa.ruc || '—') + '</span></div>' +
+    '<h3>BOLETA DE PAGO · ' + esc(periodLabel(S.period).toUpperCase()) + '</h3>' +
+    '<div class="bg"><span>Trabajador: <b>' + esc(w.name) + '</b></span><span>DNI: <b>' + esc(w.dni || '—') + '</b></span>' +
+    '<span>Régimen: <b>General (D. Leg. 728)</b></span><span>Días pagados: <b>' + b.dias + '</b></span>' +
+    '<span>Sueldo base: <b>' + fmt(Number(w.sueldo) || 0) + '</b></span><span>Pensión: <b>' + esc(sistLabel(w)) + '</b></span></div>' +
+    '<div class="bt">Ingresos</div>' + tbl(b.ing) + '<div class="tr tot"><span>Total ingresos</span><span class="num">' + fmt(b.totalIng) + '</span></div>' +
+    '<div class="bt">Descuentos</div>' + tbl(b.des) + '<div class="tr tot"><span>Total descuentos</span><span class="num">' + fmt(b.totalDes) + '</span></div>' +
+    '<div class="neto"><span>Neto a pagar</span><span class="num">' + fmt(b.neto) + '</span></div>' +
+    '<div class="bt">Aportes del empleador</div><div class="tbl"><div class="tr"><span>EsSalud (9%)</span><span class="num">' + fmt(b.essalud) + '</span></div></div>' +
+    (b.capRet ? '<p class="fine">La retención de 5.ª categoría se limitó a lo que cobra el trabajador en el mes.</p>' : '') +
+    '<p class="fine">Documento referencial generado con Liquida. No reemplaza la boleta electrónica ni el PLAME; confirma los datos con tu contador.</p></div>' +
+    '<div class="acts-col noprint"><button type="button" class="btn block" data-act="pdf-boleta">Imprimir o guardar como PDF</button></div>');
 }
 function setRes() { const r = document.getElementById('res'); if (r) r.innerHTML = resultHTML(); }
 
 app.addEventListener('input', function (e) {
+  if (e.target.dataset.emp) {
+    const key = e.target.dataset.emp;
+    if (key === 'ruc') { const c = e.target.value.replace(/\D/g, '').slice(0, 11); if (c !== e.target.value) e.target.value = c; }
+    S.empresa[key] = e.target.value; save(); return;
+  }
   const k = e.target.dataset.k; if (!k) return;
   const t = e.target;
   if (t.type === 'checkbox') {
@@ -653,6 +890,8 @@ app.addEventListener('change', function (e) {
   if (e.target.dataset.actChange === 'pick') {
     const w = S.workers.filter(function (x) { return x.id === e.target.value; })[0];
     if (w) { S.f.sueldo = w.sueldo; S.f.asig = w.asig; S.f.reg = w.reg; save(); render(); toast('Datos de ' + w.name + ' cargados'); }
+  } else if (e.target.dataset.actChange === 'period') {
+    if (/^\d{4}-(0[1-9]|1[0-2])$/.test(e.target.value)) { S.period = e.target.value; render(); }
   }
 });
 function onClick(e) {
@@ -665,12 +904,35 @@ function onClick(e) {
   else if (a === 'csv-res') downloadCSV('liquida-' + S.calc + '.csv', S.csvRows || []);
   else if (a === 'pdf-res') printView('print-res');
   else if (a === 'csv-plan') {
-    const rows = [['Liquida - Planilla del mes'], ['Fecha', new Date().toLocaleDateString('es-PE')], ['Trabajador', 'Régimen', 'Remuneración bruta', 'Pensión', 'Retención 5.ª categoría', 'Neto mensual', 'Gratificación semestral', 'CTS semestral']];
-    planRows().forEach(function (r) { rows.push([r.name, r.reg, r.bruto.toFixed(2), r.pen.toFixed(2), r.ret.toFixed(2), r.neto.toFixed(2), r.g.toFixed(2), r.c.toFixed(2)]); });
+    const pm = planBlock();
+    const rows = [['Liquida - Planilla mensual'], ['Periodo', periodLabel(S.period)], ['Empleador', S.empresa.name, 'RUC', S.empresa.ruc], ['Régimen', 'General (D. Leg. 728)'],
+      ['Trabajador', 'DNI', 'Días pagados', 'Total ingresos', 'Gratificación y bonificación', 'Pensión', 'Retención 5.ª categoría', 'Tardanzas y otros descuentos', 'Total descuentos', 'Neto a pagar', 'EsSalud empleador', 'Costo laboral', 'CTS a depositar']];
+    pm.rows.forEach(function (r) {
+      const x = r.b;
+      rows.push([r.w.name, r.w.dni || '', x.dias, x.totalIng.toFixed(2), x.grat.toFixed(2), x.pen.toFixed(2), x.ret.toFixed(2), r2(x.otros + x.tardDesc).toFixed(2), x.totalDes.toFixed(2), x.neto.toFixed(2), x.essalud.toFixed(2), x.costo.toFixed(2), x.ctsDep.toFixed(2)]);
+    });
+    const t = pm.t;
+    rows.push(['Total', '', '', t.ing.toFixed(2), t.grat.toFixed(2), t.pen.toFixed(2), t.ret.toFixed(2), t.otros.toFixed(2), t.des.toFixed(2), t.neto.toFixed(2), t.essalud.toFixed(2), t.costo.toFixed(2), t.cts.toFixed(2)]);
     rows.push(['Cálculo referencial, no es asesoría legal ni financiera']);
-    downloadCSV('liquida-planilla.csv', rows);
+    downloadCSV('liquida-planilla-' + S.period + '.csv', rows);
   }
   else if (a === 'pdf-plan') printView('print-plan');
+  else if (a === 'nov') openNov(b.dataset.id);
+  else if (a === 'boleta') { if (!S.premium) openPremium(); else openBoleta(b.dataset.id); }
+  else if (a === 'pdf-boleta') printView('print-boleta');
+  else if (a === 'savenov') {
+    const id = b.dataset.id, g = function (k) { const el = document.getElementById('nv-' + k); return el ? el.value : ''; };
+    const o = {};
+    ['faltas', 'tardanza', 'he25', 'he35', 'bonos', 'otros', 'mesesSem', 'remPrev', 'retPrev'].forEach(function (k) {
+      const val = g(k); if (val !== '') o[k] = Number(val);
+    });
+    if (o.faltas > 30) o.faltas = 30;
+    if (!S.nov[S.period]) S.nov[S.period] = {};
+    S.nov[S.period][id] = o;
+    save(); closeSheet(); render(); toast('Novedades guardadas');
+  }
+  else if (a === 'clearnov') { if (S.nov[S.period]) delete S.nov[S.period][b.dataset.id]; save(); closeSheet(); render(); toast('Novedades limpiadas'); }
+  else if (a === 'editw') openAdd(b.dataset.id);
   else if (a === 'prem') openPremium();
   else if (a === 'plan') { S.plan = v; openPremium(); }
   else if (a === 'goprem') { const pm = document.getElementById('p-mail'); if (pm && pm.value) sendLead(pm.value.trim()); S.premium = true; recordInterest(); save(); closeSheet(); render(); toast('Premium activado (demo)'); }
@@ -680,11 +942,15 @@ function onClick(e) {
   else if (a === 'savew') {
     const name = document.getElementById('n-name').value.trim();
     if (!name) { toast('Escribe un nombre'); return; }
-    S.workers.push({ id: 'w' + Date.now().toString(36), name: name, sueldo: Number(document.getElementById('n-sueldo').value) || 0,
-      asig: document.getElementById('n-asig').checked, reg: document.getElementById('n-reg').value });
+    const data = { name: name, dni: document.getElementById('n-dni').value.trim(), sueldo: Number(document.getElementById('n-sueldo').value) || 0,
+      asig: document.getElementById('n-asig').checked, reg: document.getElementById('n-reg').value,
+      pension: document.getElementById('n-pension').value, afp: document.getElementById('n-afp').value, comision: document.getElementById('n-com').value,
+      eps: document.getElementById('n-eps').checked };
+    const cur = b.dataset.id ? findW(b.dataset.id) : null;
+    if (cur) Object.assign(cur, data); else S.workers.push(Object.assign({ id: 'w' + Date.now().toString(36) }, data));
     save(); closeSheet(); render();
   }
-  else if (a === 'del') { S.workers = S.workers.filter(function (w) { return w.id !== b.dataset.id; }); save(); render(); }
+  else if (a === 'del') { S.workers = S.workers.filter(function (w) { return w.id !== b.dataset.id; }); Object.keys(S.nov).forEach(function (p) { delete S.nov[p][b.dataset.id]; }); save(); render(); }
   else if (a === 'use') {
     const w = S.workers.filter(function (x) { return x.id === b.dataset.id; })[0];
     if (w) { S.f.sueldo = w.sueldo; S.f.asig = w.asig; S.f.reg = w.reg; S.tab = 'calc'; save(); render(); window.scrollTo(0, 0); }
@@ -692,6 +958,9 @@ function onClick(e) {
 }
 app.addEventListener('click', onClick);
 sheet.addEventListener('click', function (e) { if (e.target === sheet) closeSheet(); else onClick(e); });
+sheet.addEventListener('change', function (e) {
+  if (e.target.id === 'n-pension') { const bx = document.getElementById('n-afpbox'); if (bx) bx.hidden = e.target.value !== 'afp'; }
+});
 document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
 (function () {
   try {
