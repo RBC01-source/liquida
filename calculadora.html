@@ -199,7 +199,7 @@ window.LIQUIDA_CFG={"endpoint": "https://formspree.io/f/mkjjodoz", "email": ""};
 //            Premium funciona en modo demo (el botón lo activa gratis). Con clave, solo se activa con un código válido.
 //  pay:      enlaces de pago por plan (Mercado Pago, Culqi, Niubiz, Izipay…). Vacío = se pide el correo y te contactas.
 //  whatsapp: número con código de país y sin signos (ej. 51999888777) para el botón «Escríbenos». Vacío = no se muestra.
-window.LIQUIDA_LIC={"pub": {"kty":"EC","crv":"P-256","x":"jgbedcVWIsf8hE0BQABMJshOhnUpZImEkaOREY2D6Xw","y":"uwcfwYZGsqd-Jno9jaM_cDX3iPfHDMx-HgRZ-OHvj4M"}, "pay": {"mensual": "", "anual": ""}, "whatsapp": ""};
+window.LIQUIDA_LIC={"pub": {"kty":"EC","crv":"P-256","x":"jgbedcVWIsf8hE0BQABMJshOhnUpZImEkaOREY2D6Xw","y":"uwcfwYZGsqd-Jno9jaM_cDX3iPfHDMx-HgRZ-OHvj4M"}, "pay": {"mensual": "", "anual": ""}, "whatsapp": "51960250506", "yape": "51960250506"};
 /*PURE*/
 const RMV = 1230, UIT = 5500, ASIG = RMV * 0.10;
 const REG = {
@@ -856,8 +856,9 @@ function premBenefits() {
   return '<ul class="list"><li>' + ICON.check + '<span>Trabajadores ilimitados (gratis: hasta 3)</span></li><li>' + ICON.check + '<span>Indemnización por despido arbitrario en la liquidación</span></li><li>' + ICON.check + '<span>Totales de planilla por semestre</span></li>' + (siteMode() ? '<li>' + ICON.check + '<span>Boletas de pago imprimibles y planilla mensual en PDF y Excel</span></li>' : '') + '</ul>';
 }
 function planButtons() {
-  return '<div class="plans"><button type="button" class="plan" data-act="plan" data-v="mensual" aria-pressed="' + (S.plan === 'mensual') + '"><span>Mensual</span><b>S/ 9.90</b></button><button type="button" class="plan" data-act="plan" data-v="anual" aria-pressed="' + (S.plan === 'anual') + '"><span>Anual</span><b>S/ 79</b><em>Ahorra 33%</em></button></div>';
+  return '<div class="plans"><button type="button" class="plan" data-act="plan" data-v="mensual" aria-pressed="' + (S.plan === 'mensual') + '"><span>Mensual</span><b>S/ 29</b></button><button type="button" class="plan" data-act="plan" data-v="anual" aria-pressed="' + (S.plan === 'anual') + '"><span>Anual</span><b>S/ 290</b><em>2 meses gratis</em></button></div>';
 }
+function yapeFmt(n) { const m = /^51(\d{3})(\d{3})(\d{3})$/.exec(n); return m ? m[1] + ' ' + m[2] + ' ' + m[3] : n; }
 function openPremium() {
   const head = '<div class="sh-top"><h2>Liquida Premium</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>';
   if (!licOn()) {   // modo demo: todavía no hay clave configurada
@@ -874,10 +875,12 @@ function openPremium() {
     h += '<div class="note">' + ICON.check + '<span>Premium activo para <b>' + esc(maskEmail(S.lic.email)) + '</b> (plan ' + esc(S.lic.plan) + '). Válido hasta el <b>' + dmy(S.lic.exp) + '</b>.</span></div>' + premBenefits() + code +
       '<button type="button" class="btn ghost block" data-act="unprem">Quitar Premium de este navegador</button>';
   } else {
-    const url = (LIC.pay || {})[S.plan], price = S.plan === 'anual' ? 'S/ 79' : 'S/ 9.90';
+    const url = (LIC.pay || {})[S.plan], price = S.plan === 'anual' ? 'S/ 290' : 'S/ 29';
     const wa = LIC.whatsapp && /^\d{8,15}$/.test(LIC.whatsapp) ? '<a class="btn ghost block" href="https://wa.me/' + LIC.whatsapp + '?text=' + encodeURIComponent('Hola, quiero activar Liquida Premium (plan ' + S.plan + ').') + '" target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a>' : '';
     const pay = (url && /^https:\/\//.test(url))
       ? '<a class="btn block" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">Pagar ' + price + ' (plan ' + S.plan + ')</a>'
+      : (LIC.yape && /^\d{8,15}$/.test(LIC.yape))
+      ? '<div class="note">' + ICON.info + '<span>Paga <b>' + price + '</b> por <b>Yape o Plin</b> al <b>' + esc(yapeFmt(LIC.yape)) + '</b> y envíanos el comprobante por WhatsApp con tu correo. Te enviamos tu código de acceso.</span></div>'
       : '<div class="fld"><label for="p-mail">Tu correo (te enviamos los datos de pago)</label><input id="p-mail" type="email" autocomplete="email" placeholder="tucorreo@ejemplo.com"></div><button type="button" class="btn block" data-act="lead">Quiero Premium</button>';
     if (S.licInfo && S.licInfo.reason === 'expired') h += '<div class="note">' + ICON.info + '<span>Tu Premium venció el <b>' + dmy(S.licInfo.exp) + '</b>. Renuévalo para seguir usando boletas y exportaciones.</span></div>';
     h += premBenefits() + planButtons() + pay + wa +
