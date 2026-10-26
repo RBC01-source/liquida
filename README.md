@@ -56,3 +56,6 @@ Constantes que hay que revisar periódicamente (están en el bloque `PURE`):
 - `RMV` y `UIT`: cada vez que salga un decreto.
 
 Supuestos: si no se informan los acumulados del año, la retención de 5.ª categoría asume que el trabajador cobró lo mismo todos los meses. No incluye SCTR, Vida Ley, subsidios de EsSalud, participación en utilidades ni la generación de archivos PLAME/T-Registro.
+
+## Página de precios
+`precios.html` muestra el plan gratis y Premium (S/ 29 mensual, S/ 290 anual), cómo pagar por Yape/Plin y preguntas frecuentes. Si cambias precios o número, actualiza también `precios.html` y los textos de `calculadora.html` (`planButtons` y `openPremium`).
