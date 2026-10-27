@@ -110,6 +110,19 @@ a.btn{text-decoration:none}
 .wrow b{display:block}
 .wrow small{color:var(--muted);display:block}
 .wrow .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+
+details.acc{border-top:1px solid var(--line)}
+details.acc:last-of-type{border-bottom:1px solid var(--line)}
+details.acc>summary{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 2px;font-weight:700;cursor:pointer;list-style:none}
+details.acc>summary::-webkit-details-marker{display:none}
+details.acc>summary::after{content:"+";font-size:1.25rem;line-height:1;color:var(--muted);font-weight:500}
+details.acc[open]>summary::after{content:"\2013"}
+details.acc .ab{padding:0 2px 14px;display:grid;gap:6px;font-size:.92rem}
+details.acc .ab p{margin:0;max-width:none}
+details.acc .ab .when{color:var(--muted)}
+details.acc .ab a{color:var(--ink);font-weight:700}
+.sech{font-size:.74rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px}
+.card details.acc .tbl{margin-top:2px}
 details.adv{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:12px}
 details.adv summary{font-weight:700;font-size:.86rem;color:var(--muted);cursor:pointer}
 details.adv[open] summary{margin-bottom:10px}
@@ -957,6 +970,15 @@ function teamView() {
   }
   return h;
 }
+const BEN = {"gen": [["Gratificaciones", "Un sueldo en julio y otro en diciembre, más la bonificación extraordinaria del 9% (6.75% si tiene EPS). Con 6 meses completos en el semestre.", "Hasta el 15 de julio y el 15 de diciembre. <a href=\"gratificacion-julio-diciembre.html\">Calcular<\/a>"], ["CTS", "(Remuneración + 1/6 de la gratificación) ÷ 12 por mes trabajado. Se deposita en la cuenta del trabajador; no se paga en efectivo.", "Hasta el 15 de mayo y el 15 de noviembre. <a href=\"cts-2026.html\">Calcular<\/a>"], ["Vacaciones", "30 días calendario por año de servicios, con una remuneración vacacional. Se pueden fraccionar en tramos de al menos 7 días.", "Tras cumplir el año. <a href=\"vacaciones-truncas.html\">Calcular truncas<\/a>"], ["Asignación familiar", "10% de la RMV (S/ 123 con la RMV de S/ 1,230) por tener hijos menores de 18 años, o mayores si siguen estudios superiores.", "Cada mes. <a href=\"rmv-2026-asignacion-familiar.html\">Ver RMV y asignación<\/a>"], ["Utilidades", "Participación en las ganancias para empresas con más de 20 trabajadores: 5%, 8% o 10% según la actividad. Se reparte 50% por días trabajados y 50% por remuneraciones.", "Después de presentar la declaración anual del impuesto a la renta."], ["Horas extras", "Son voluntarias. Las 2 primeras horas extras diarias llevan un recargo de 25% y desde la tercera de 35%.", "Con la remuneración del mes. Se calculan en la planilla."], ["Descanso semanal y feriados", "24 horas consecutivas por semana y descanso remunerado en feriados. Si se trabaja sin descanso sustitutorio, se paga triple.", "Cada semana y en cada feriado."], ["Jornada", "Máximo 8 horas diarias o 48 semanales.", ""], ["EsSalud y pensiones", "EsSalud: 9% de la remuneración, a cargo del empleador. AFP u ONP: se descuenta al trabajador (ONP 13%; AFP aporte 10% más comisión y prima).", "Cada mes. <a href=\"sueldo-neto-afp-onp.html\">Calcular el sueldo neto<\/a>"], ["Licencias", "Maternidad: 98 días con subsidio de EsSalud. Paternidad: 10 días calendario con remuneración. Adopción: 30 días. Enfermedad grave de un familiar directo: 7 días (hay proyectos para ampliar la paternidad; confirma la norma vigente).", "Cuando ocurre el hecho que la origina."], ["Indemnización por despido arbitrario", "1.5 remuneraciones mensuales por año de servicios, con un tope de 12. Solo si el despido no tiene causa justa.", "Al cese. <a href=\"despido-arbitrario-indemnizacion.html\">Calcular<\/a>"], ["Liquidación al cese", "CTS trunca, gratificación trunca con su bonificación, vacaciones truncas o no gozadas y, si corresponde, la indemnización.", "Dentro de 48 horas del cese. <a href=\"liquidacion-beneficios-sociales.html\">Qué incluye<\/a>"]], "mype": [["Vacaciones", "15 días por año", "15 días por año"], ["Gratificaciones", "No tiene", "Medio sueldo en julio y medio en diciembre"], ["CTS", "No tiene", "15 remuneraciones diarias por año (50%)"], ["Salud", "EsSalud o SIS subsidiado", "EsSalud (9% a cargo del empleador)"], ["Pensiones", "ONP o AFP", "ONP o AFP"], ["Utilidades", "No tiene", "Sí, si la empresa tuvo más de 20 trabajadores"], ["Despido arbitrario", "10 remuneraciones diarias por año, tope 90", "20 remuneraciones diarias por año, tope 120"], ["Ventas anuales", "Hasta 150 UIT", "Más de 150 y hasta 1,700 UIT"]]};
+function accGuide() {
+  const g = BEN.gen.map(function (r) { return '<details class="acc"><summary>' + r[0] + '</summary><div class="ab"><p>' + r[1] + '</p>' + (r[2] ? '<p class="when"><b>Cuándo:</b> ' + r[2] + '</p>' : '') + '</div></details>'; }).join('');
+  const m = BEN.mype.map(function (r) { return '<details class="acc"><summary>' + r[0] + '</summary><div class="ab"><p><b>Microempresa:</b> ' + r[1] + '</p><p><b>Pequeña empresa:</b> ' + r[2] + '</p></div></details>'; }).join('');
+  return '<section class="card"><h2>Beneficios sociales</h2><p class="sub">Toca cada beneficio para ver cómo funciona.</p>' +
+    '<h3 class="sech">Régimen general (D. Leg. 728)</h3>' + g +
+    '<h3 class="sech">Micro y pequeña empresa (Remype)</h3>' + m +
+    '<p class="fine"><a href="beneficios-sociales-peru.html">Ver la guía completa</a> · Si la empresa no está en el Remype, aplica el régimen general.</p></section>';
+}
 function guideView() {
   const rows = [['Remuneración Mínima Vital', 'S/ 1,230 (desde el 1 de oct. 2026)'], ['Asignación familiar (10% RMV)', 'S/ ' + ASIG.toFixed(2)], ['UIT 2026', fmt(UIT)],
     ['Gratificaciones', 'Jul. y dic. · 1 sueldo + 9% (EsSalud) o 6.75% (EPS)'], ['CTS', 'Depósito hasta 15 may. y 15 nov. · 1/12 por mes'], ['Vacaciones', '30 días (general) · 15 días (REMYPE)'],
@@ -965,9 +987,10 @@ function guideView() {
     ['Planilla: EsSalud', '9% a cargo del empleador; no aplica a la gratificación'],
     ['Planilla: horas extras', '25% las 2 primeras horas · 35% desde la 3.ª · valor hora = remuneración ÷ 30 ÷ 8'],
     ['Planilla: retención 5.ª', 'Divisores SUNAT: ene–mar 12 · abr 9 · may–jul 8 · ago 5 · set–nov 4 · dic saldo']];
-  let h = '<section class="card"><h2>Reglas que usa Liquida</h2><div class="tbl">';
+  let h = accGuide();
+  h += '<section class="card"><details class="acc"><summary>Reglas y cifras que usa Liquida</summary><div class="ab"><div class="tbl">';
   rows.forEach(function (r) { h += '<div class="tr"><span>' + r[0] + '</span><span class="num" style="text-align:right;white-space:normal;font-size:.8rem">' + r[1] + '</span></div>'; });
-  h += '</div></section>';
+  h += '</div></div></details></section>';
   if (IS_OWNER && DB) {
     h += '<section class="card"><h2>Panel del creador</h2><p class="sub">Interés en Premium registrado por quienes abren esta página.</p>' +
       (STATS ? '<div class="tbl"><div class="tr"><span>Plan mensual</span><span class="num">' + STATS.mensual + '</span></div><div class="tr"><span>Plan anual</span><span class="num">' + STATS.anual + '</span></div><div class="tr tot"><span>Total interesados</span><span class="num">' + (STATS.mensual + STATS.anual) + '</span></div></div>' : '<p class="fine">Cargando…</p>') + '</section>';
