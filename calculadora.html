@@ -115,13 +115,22 @@ details.acc{border-top:1px solid var(--line)}
 details.acc:last-of-type{border-bottom:1px solid var(--line)}
 details.acc>summary{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:13px 2px;font-weight:700;cursor:pointer;list-style:none}
 details.acc>summary::-webkit-details-marker{display:none}
+details.acc>summary>span:first-child{flex:1}
 details.acc>summary::after{content:"+";font-size:1.25rem;line-height:1;color:var(--muted);font-weight:500}
 details.acc[open]>summary::after{content:"\2013"}
 details.acc .ab{padding:0 2px 14px;display:grid;gap:6px;font-size:.92rem}
 details.acc .ab p{margin:0;max-width:none}
 details.acc .ab .when{color:var(--muted)}
 details.acc .ab a{color:var(--ink);font-weight:700}
-.sech{font-size:.74rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px}
+.frq{font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px;white-space:nowrap}
+.gt{font-size:.74rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 4px}
+.rg{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 2px}
+.rg button{min-height:38px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--surface);font-weight:700;font-size:.86rem;color:var(--muted)}
+.rg button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.prox{display:grid;gap:6px;background:var(--band);color:var(--on-band);border-radius:14px;padding:12px 14px;margin:12px 0 2px}
+.prox:empty{display:none}
+.prox .pl{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.prox b{font-weight:800}
 .card details.acc .tbl{margin-top:2px}
 details.adv{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:12px}
 details.adv summary{font-weight:700;font-size:.86rem;color:var(--muted);cursor:pointer}
@@ -620,6 +629,20 @@ async function firmaVerify(frag) {
     return { ok: true, d: F.j, huella: F.x.slice(0, 8) };
   } catch (e) { return { ok: false, reason: 'crypto' }; }
 }
+function proximasFechas(hoy, reg) {
+  if (reg === 'micro') return [];
+  const d0 = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()), y = d0.getFullYear(), out = [];
+  [[y, 4, 15, 'CTS'], [y, 6, 15, 'Gratificación'], [y, 10, 15, 'CTS'], [y, 11, 15, 'Gratificación'], [y + 1, 4, 15, 'CTS'], [y + 1, 6, 15, 'Gratificación']].forEach(function (e) {
+    const d = new Date(e[0], e[1], e[2]);
+    if (d >= d0 && out.length < 2) out.push({ k: e[3], mes: e[1], dia: e[2], anio: e[0], dias: Math.round((d - d0) / 86400000) });
+  });
+  return out;
+}
+function proxTexto(e) {
+  const M = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'setiembre', 'octubre', 'noviembre', 'diciembre'];
+  const cuando = e.dias === 0 ? 'vence hoy' : e.dias === 1 ? 'vence mañana' : 'faltan ' + e.dias + ' días';
+  return { l: e.k + ' · hasta el ' + e.dia + ' de ' + M[e.mes], r: cuando };
+}
 /*ENDPURE*/
 
 /* ------------------------------ UI ------------------------------ */
@@ -970,13 +993,21 @@ function teamView() {
   }
   return h;
 }
-const BEN = {"gen": [["Gratificaciones", "Un sueldo en julio y otro en diciembre, más la bonificación extraordinaria del 9% (6.75% si tiene EPS). Con 6 meses completos en el semestre.", "Hasta el 15 de julio y el 15 de diciembre. <a href=\"gratificacion-julio-diciembre.html\">Calcular<\/a>"], ["CTS", "(Remuneración + 1/6 de la gratificación) ÷ 12 por mes trabajado. Se deposita en la cuenta del trabajador; no se paga en efectivo.", "Hasta el 15 de mayo y el 15 de noviembre. <a href=\"cts-2026.html\">Calcular<\/a>"], ["Vacaciones", "30 días calendario por año de servicios, con una remuneración vacacional. Se pueden fraccionar en tramos de al menos 7 días.", "Tras cumplir el año. <a href=\"vacaciones-truncas.html\">Calcular truncas<\/a>"], ["Asignación familiar", "10% de la RMV (S/ 123 con la RMV de S/ 1,230) por tener hijos menores de 18 años, o mayores si siguen estudios superiores.", "Cada mes. <a href=\"rmv-2026-asignacion-familiar.html\">Ver RMV y asignación<\/a>"], ["Utilidades", "Participación en las ganancias para empresas con más de 20 trabajadores: 5%, 8% o 10% según la actividad. Se reparte 50% por días trabajados y 50% por remuneraciones.", "Después de presentar la declaración anual del impuesto a la renta."], ["Horas extras", "Son voluntarias. Las 2 primeras horas extras diarias llevan un recargo de 25% y desde la tercera de 35%.", "Con la remuneración del mes. Se calculan en la planilla."], ["Descanso semanal y feriados", "24 horas consecutivas por semana y descanso remunerado en feriados. Si se trabaja sin descanso sustitutorio, se paga triple.", "Cada semana y en cada feriado."], ["Jornada", "Máximo 8 horas diarias o 48 semanales.", ""], ["EsSalud y pensiones", "EsSalud: 9% de la remuneración, a cargo del empleador. AFP u ONP: se descuenta al trabajador (ONP 13%; AFP aporte 10% más comisión y prima).", "Cada mes. <a href=\"sueldo-neto-afp-onp.html\">Calcular el sueldo neto<\/a>"], ["Licencias", "Maternidad: 98 días con subsidio de EsSalud. Paternidad: 10 días calendario con remuneración. Adopción: 30 días. Enfermedad grave de un familiar directo: 7 días (hay proyectos para ampliar la paternidad; confirma la norma vigente).", "Cuando ocurre el hecho que la origina."], ["Indemnización por despido arbitrario", "1.5 remuneraciones mensuales por año de servicios, con un tope de 12. Solo si el despido no tiene causa justa.", "Al cese. <a href=\"despido-arbitrario-indemnizacion.html\">Calcular<\/a>"], ["Liquidación al cese", "CTS trunca, gratificación trunca con su bonificación, vacaciones truncas o no gozadas y, si corresponde, la indemnización.", "Dentro de 48 horas del cese. <a href=\"liquidacion-beneficios-sociales.html\">Qué incluye<\/a>"]], "mype": [["Vacaciones", "15 días por año", "15 días por año"], ["Gratificaciones", "No tiene", "Medio sueldo en julio y medio en diciembre"], ["CTS", "No tiene", "15 remuneraciones diarias por año (50%)"], ["Salud", "EsSalud o SIS subsidiado", "EsSalud (9% a cargo del empleador)"], ["Pensiones", "ONP o AFP", "ONP o AFP"], ["Utilidades", "No tiene", "Sí, si la empresa tuvo más de 20 trabajadores"], ["Despido arbitrario", "10 remuneraciones diarias por año, tope 90", "20 remuneraciones diarias por año, tope 120"], ["Ventas anuales", "Hasta 150 UIT", "Más de 150 y hasta 1,700 UIT"]]};
+const BEN = [{"id": "fechas", "t": "Se pagan en fechas fijas del año", "items": [{"id": "grati", "t": "Gratificaciones", "g": "Un sueldo en julio y otro en diciembre, más la bonificación extraordinaria del 9% (6.75% si tiene EPS). Con 6 meses completos en el semestre.", "p": "Medio sueldo en julio y medio sueldo en diciembre.", "m": "No tiene derecho a gratificaciones.", "w": "Hasta el 15 de julio y el 15 de diciembre. <a href=\"gratificacion-julio-diciembre.html\">Ver guía<\/a>", "f": "Semestral"}, {"id": "cts", "t": "CTS", "g": "(Remuneración + 1/6 de la gratificación) ÷ 12 por mes trabajado. Se deposita en la cuenta del trabajador; no se paga en efectivo.", "p": "15 remuneraciones diarias por año completo de servicios (la mitad del régimen general).", "m": "No tiene derecho a CTS.", "w": "Hasta el 15 de mayo y el 15 de noviembre. <a href=\"cts-2026.html\">Ver guía<\/a>", "f": "Semestral"}, {"id": "util", "t": "Utilidades", "g": "Participación en las ganancias para empresas con más de 20 trabajadores: 5%, 8% o 10% según la actividad. Se reparte 50% por días trabajados y 50% por remuneraciones.", "p": "Sí, si la empresa tuvo más de 20 trabajadores en el año.", "m": "No tiene derecho a utilidades.", "w": "Después de presentar la declaración anual del impuesto a la renta.", "f": "Anual"}]}, {"id": "mes", "t": "Se pagan o descuentan cada mes", "items": [{"id": "asig", "t": "Asignación familiar", "g": "10% de la RMV (S/ 123 con la RMV de S/ 1,230) por tener hijos menores de 18 años, o mayores si siguen estudios superiores.", "p": "Depende de tu caso: consúltalo con un especialista o en gob.pe/trabajo.", "m": "Depende de tu caso: consúltalo con un especialista o en gob.pe/trabajo.", "w": "Cada mes. <a href=\"rmv-2026-asignacion-familiar.html\">Ver RMV y asignación<\/a>", "f": "Mensual"}, {"id": "he", "t": "Horas extras", "g": "Son voluntarias. Las 2 primeras horas extras diarias llevan un recargo de 25% y desde la tercera de 35%.", "p": "Son voluntarias. Las 2 primeras horas extras diarias llevan un recargo de 25% y desde la tercera de 35%.", "m": "Son voluntarias. Las 2 primeras horas extras diarias llevan un recargo de 25% y desde la tercera de 35%.", "w": "Con la remuneración del mes. Se calculan en la pestaña Planilla.", "f": "Mensual"}, {"id": "essalud", "t": "EsSalud y pensiones", "g": "EsSalud: 9% de la remuneración, a cargo del empleador. AFP u ONP: se descuenta al trabajador (ONP 13%; AFP aporte 10% más comisión y prima).", "p": "EsSalud (9% a cargo del empleador) y ONP o AFP a elección del trabajador.", "m": "EsSalud o SIS subsidiado, y ONP o AFP a elección del trabajador.", "w": "Cada mes. <a href=\"sueldo-neto-afp-onp.html\">Calcular el sueldo neto<\/a>", "f": "Mensual"}]}, {"id": "descansos", "t": "Descansos y licencias", "items": [{"id": "vac", "t": "Vacaciones", "g": "30 días calendario por año de servicios, con una remuneración vacacional. Se pueden fraccionar en tramos de al menos 7 días.", "p": "15 días calendario por año de servicios.", "m": "15 días calendario por año de servicios.", "w": "Tras cumplir el año. <a href=\"vacaciones-truncas.html\">Ver guía<\/a>", "f": "Anual"}, {"id": "desc", "t": "Descanso semanal y feriados", "g": "24 horas consecutivas por semana y descanso remunerado en feriados. Si se trabaja sin descanso sustitutorio, se paga triple.", "p": "24 horas consecutivas por semana y descanso remunerado en feriados. Si se trabaja sin descanso sustitutorio, se paga triple.", "m": "24 horas consecutivas por semana y descanso remunerado en feriados. Si se trabaja sin descanso sustitutorio, se paga triple.", "w": "Cada semana y en cada feriado.", "f": "Semanal"}, {"id": "jor", "t": "Jornada", "g": "Máximo 8 horas diarias o 48 semanales.", "p": "Máximo 8 horas diarias o 48 semanales.", "m": "Máximo 8 horas diarias o 48 semanales.", "w": "", "f": "Semanal"}, {"id": "lic", "t": "Licencias", "g": "Maternidad: 98 días con subsidio de EsSalud. Paternidad: 10 días calendario con remuneración. Adopción: 30 días. Enfermedad grave de un familiar directo: 7 días (hay proyectos para ampliar la paternidad; confirma la norma vigente).", "p": "Maternidad: 98 días con subsidio de EsSalud. Paternidad: 10 días calendario con remuneración. Adopción: 30 días. Enfermedad grave de un familiar directo: 7 días (hay proyectos para ampliar la paternidad; confirma la norma vigente).", "m": "Maternidad: 98 días con subsidio de EsSalud. Paternidad: 10 días calendario con remuneración. Adopción: 30 días. Enfermedad grave de un familiar directo: 7 días (hay proyectos para ampliar la paternidad; confirma la norma vigente).", "w": "Cuando ocurre el hecho que la origina.", "f": "Eventual"}]}, {"id": "cese", "t": "Al terminar la relación laboral", "items": [{"id": "liq", "t": "Liquidación al cese", "g": "CTS trunca, gratificación trunca con su bonificación, vacaciones truncas o no gozadas y, si corresponde, la indemnización.", "p": "Vacaciones truncas (15 días por año), medio sueldo de gratificación trunca, CTS trunca (50%) y, si corresponde, la indemnización.", "m": "Vacaciones truncas (15 días por año) y, si corresponde, la indemnización. No incluye gratificación ni CTS.", "w": "Dentro de las 48 horas del cese. <a href=\"liquidacion-beneficios-sociales.html\">Qué incluye<\/a>", "f": "Al cese"}, {"id": "indem", "t": "Indemnización por despido arbitrario", "g": "1.5 remuneraciones mensuales por año de servicios, con un tope de 12. Solo si el despido no tiene causa justa.", "p": "20 remuneraciones diarias por año de servicios, con tope de 120.", "m": "10 remuneraciones diarias por año de servicios, con tope de 90.", "w": "Al cese. <a href=\"despido-arbitrario-indemnizacion.html\">Ver guía<\/a>", "f": "Al cese"}]}];
 function accGuide() {
-  const g = BEN.gen.map(function (r) { return '<details class="acc"><summary>' + r[0] + '</summary><div class="ab"><p>' + r[1] + '</p>' + (r[2] ? '<p class="when"><b>Cuándo:</b> ' + r[2] + '</p>' : '') + '</div></details>'; }).join('');
-  const m = BEN.mype.map(function (r) { return '<details class="acc"><summary>' + r[0] + '</summary><div class="ab"><p><b>Microempresa:</b> ' + r[1] + '</p><p><b>Pequeña empresa:</b> ' + r[2] + '</p></div></details>'; }).join('');
-  return '<section class="card"><h2>Beneficios sociales</h2><p class="sub">Toca cada beneficio para ver cómo funciona.</p>' +
-    '<h3 class="sech">Régimen general (D. Leg. 728)</h3>' + g +
-    '<h3 class="sech">Micro y pequeña empresa (Remype)</h3>' + m +
+  const reg = S.f.reg === 'pequena' || S.f.reg === 'micro' ? S.f.reg : 'general', k = reg === 'pequena' ? 'p' : reg === 'micro' ? 'm' : 'g';
+  const chips = [['general', 'General'], ['pequena', 'Pequeña empresa'], ['micro', 'Microempresa']].map(function (x) { return '<button type="button" data-act="reg-ben" data-v="' + x[0] + '" aria-pressed="' + (reg === x[0]) + '">' + x[1] + '</button>'; }).join('');
+  let px = proximasFechas(new Date(), reg).map(function (e) { const t = proxTexto(e); return '<div class="pl"><b>' + t.l + '</b><span>' + t.r + '</span></div>'; }).join('');
+  if (!px && reg === 'micro') px = '<div class="pl"><b>La microempresa no paga gratificaciones ni CTS</b></div>';
+  let first = true;
+  const grupos = BEN.map(function (g) {
+    return '<h3 class="gt">' + g.t + '</h3>' + g.items.map(function (i) {
+      const o = first ? ' open' : ''; first = false;
+      return '<details class="acc" id="b-' + i.id + '"' + o + '><summary><span>' + i.t + '</span>' + (i.f ? '<span class="frq">' + i.f + '</span>' : '') + '</summary><div class="ab"><p>' + i[k] + '</p>' + (i.w ? '<p class="when"><b>Cuándo:</b> ' + i.w + '</p>' : '') + '</div></details>';
+    }).join('');
+  }).join('');
+  return '<section class="card"><h2>Beneficios sociales</h2><p class="sub">Elige tu régimen y toca cada beneficio para ver cómo funciona.</p>' +
+    '<div class="rg" role="group" aria-label="Régimen laboral">' + chips + '</div><div class="prox" aria-live="polite">' + px + '</div>' + grupos +
     '<p class="fine"><a href="beneficios-sociales-peru.html">Ver la guía completa</a> · Si la empresa no está en el Remype, aplica el régimen general.</p></section>';
 }
 function guideView() {
@@ -1003,10 +1034,10 @@ function render() {
   const t = S.tab;
   let h = '<header class="top"><div class="brand"><svg class="logo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9"/><path d="M9 24V10M9 10h7a4 4 0 010 8H9M17 18l7 6"/></svg><div>Liquida<small>Beneficios laborales Perú</small></div></div>' +
     '<button type="button" class="pchip" data-act="prem" aria-label="Plan">' + (S.premium ? '<b>Premium</b>' : 'Plan <b>Gratis</b>') + '</button></header>' +
-    '<nav class="nav" role="tablist">' + [['calc', 'Calcular'], ['team', 'Equipo'], ['plan', 'Planilla'], ['guide', 'Guía']].map(function (x) {
+    '<nav class="nav" role="tablist">' + [['calc', 'Calcular'], ['team', 'Equipo'], ['plan', 'Planilla'], ['guide', 'Beneficios']].map(function (x) {
       return '<button type="button" role="tab" data-act="tab" data-v="' + x[0] + '" aria-selected="' + (t === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</nav>';
   h += t === 'calc' ? calcView() : t === 'team' ? teamView() : t === 'plan' ? planillaView() : guideView();
-  h += '<footer class="disc"><span><a href="precios.html">Precios</a> · <a href="index.html">Inicio</a></span><span>Cálculos referenciales, no constituyen asesoría legal ni financiera.</span></footer>';
+  h += '<footer class="disc"><span><a href="beneficios-sociales-peru.html">Beneficios</a> · <a href="precios.html">Precios</a> · <a href="index.html">Inicio</a></span><span>Cálculos referenciales, no constituyen asesoría legal ni financiera.</span></footer>';
   app.innerHTML = h;
 }
 
@@ -1228,6 +1259,7 @@ function onClick(e) {
   else if (a === 'nov') openNov(b.dataset.id);
   else if (a === 'boleta') { if (!S.premium) openPremium(); else openBoleta(b.dataset.id); }
   else if (a === 'pdf-boleta') printView('print-boleta');
+  else if (a === 'reg-ben') { if (v === 'general' || v === 'pequena' || v === 'micro') { S.f.reg = v; save(); render(); } }
   else if (a === 'firma-trab') openFirmaPad(b.dataset.id);
   else if (a === 'firma-clear') { const c = document.getElementById('fp'); if (c && c.getContext) { c.getContext('2d').clearRect(0, 0, c.width, c.height); c.dataset.any = ''; } }
   else if (a === 'firma-back') openBoleta(b.dataset.id);
