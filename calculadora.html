@@ -998,7 +998,9 @@ function compute() {
       formula: fmt(c) + ' × (' + rg.v + '/30) × (' + f.meses + '/12 + ' + f.dias + '/360)', notes: [] };
   }
   if (S.calc === 'liq') {
-    if (!f.ingreso || !f.cese || f.ingreso > f.cese) return { error: 'La fecha de cese debe ser igual o posterior a la de ingreso.' };
+    const okF = function (d) { return /^\d{4}-\d{2}-\d{2}$/.test(d || '') && d >= '1900-01-01' && d <= '2100-12-31'; };
+    if (!okF(f.ingreso) || !okF(f.cese)) return { error: 'Escribe fechas válidas (año entre 1900 y 2100).' };
+    if (f.ingreso > f.cese) return { error: 'La fecha de cese debe ser igual o posterior a la de ingreso.' };
     const L = liquidacion(Object.assign({ ingreso: f.ingreso, cese: f.cese, vencidos: Number(f.vencidos) || 0, despido: !!f.despido && S.premium, eps: !!f.eps }, base));
     const rows = L.items.map(function (i) { return [i.l, i.v]; });
     const notes = ['Tiempo de servicios: ' + L.years + ' año(s), ' + (L.tenure.m % 12) + ' mes(es) y ' + L.tenure.d + ' día(s).'];
