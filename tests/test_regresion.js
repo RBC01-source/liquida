@@ -29,4 +29,16 @@ ok('AFP: aporte y comisión sobre todo el sueldo, prima con tope', Math.abs(alto
 // Liquidación con fechas
 const L = A.liquidacion({ ingreso: '2023-01-01', cese: '2023-12-31', sueldo: 3000, reg: 'general', vencidos: 0, despido: false });
 ok('liquidación: resultado finito con fechas normales', isFinite(L.total) && L.total > 0);
+
+// Liquidación: gratificación trunca solo con meses calendario completos; despido sin mínimo de 3 sueldos
+const li = (ing, ces, extra) => A.liquidacion({ ingreso: ing, cese: ces, sueldo: 3000, reg: 'general', vencidos: 0, despido: false, ...(extra || {}) });
+const gm = r => r.items.find(i => i.k === 'gr').v;
+ok('gratificación: ingreso 15-ene y cese 14-jun → 4 meses (feb–may), no 5', gm(li('2026-01-15', '2026-06-14')) === 2000, gm(li('2026-01-15', '2026-06-14')));
+ok('gratificación: ingreso 20-jul y cese 19-dic → 4 meses', gm(li('2026-07-20', '2026-12-19')) === 2000);
+ok('gratificación: ingreso 1-ene y cese 30-jun → 6 meses completos', gm(li('2025-01-01', '2026-06-30')) === 3000);
+ok('gratificación: cese 31-mar con ingreso anterior → 3 meses', gm(li('2025-01-01', '2026-03-31')) === 1500);
+ok('gratificación: ingreso y cese en el mismo mes → 0', gm(li('2026-03-10', '2026-03-25')) === 0);
+const di = r => r.items.find(i => i.k === 'ind').v;
+ok('despido arbitrario: 6 meses de servicio y S/ 3,000 → S/ 2,250 (sin mínimo de 3 sueldos)', Math.abs(di(li('2026-01-01', '2026-06-30', { despido: true })) - 2250) < 1, di(li('2026-01-01', '2026-06-30', { despido: true })));
+ok('despido arbitrario: tope de 12 sueldos', Math.abs(di(li('2000-01-01', '2026-06-30', { despido: true })) - 36000) < 1);
 console.log('\n' + (n - fail) + '/' + n + ' comprobaciones correctas'); process.exit(fail ? 1 : 0);
