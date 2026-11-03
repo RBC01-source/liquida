@@ -238,7 +238,7 @@ window.LIQUIDA_CFG={"endpoint": "https://formspree.io/f/mkjjodoz", "email": ""};
 //  pay:      enlaces de pago por plan (Mercado Pago, Culqi, Niubiz, Izipay…). Vacío = se pide el correo y te contactas.
 //  whatsapp: número con código de país y sin signos (ej. 51999888777) para el botón «Escríbenos». Vacío = no se muestra.
 // Supabase: pega aquí la URL del proyecto y la clave pública «anon» (nunca la «service_role»). Vacío = sin cuentas.
-window.LIQUIDA_SB={"url": "", "anon": ""};
+window.LIQUIDA_SB={"url":"https://dvhjimeelatvtojweyqj.supabase.co","anon":"sb_publishable_Ifd57BFp0pjAJohtGmsT9A_PNAbP28W"};
 window.LIQUIDA_LIC={"pub": {"kty":"EC","crv":"P-256","x":"jgbedcVWIsf8hE0BQABMJshOhnUpZImEkaOREY2D6Xw","y":"uwcfwYZGsqd-Jno9jaM_cDX3iPfHDMx-HgRZ-OHvj4M"}, "pay": {"mensual": "", "anual": ""}, "whatsapp": "51960250506", "yape": "51960250506"};
 /*PURE*/
 const RMV = 1230, UIT = 5500, ASIG = RMV * 0.10;
@@ -679,7 +679,9 @@ function sbMsg(e) {
   return 'No se pudo completar la operación. Inténtalo de nuevo.';
 }
 async function sbCall(cfg, f, method, path, body, token, extra) {
-  const h = { apikey: cfg.anon, Authorization: 'Bearer ' + (token || cfg.anon), 'Content-Type': 'application/json' };
+  const h = { apikey: cfg.anon, 'Content-Type': 'application/json' };
+  // Las claves nuevas (sb_publishable_…) no son JWT: solo van en apikey. La sesión del usuario sí va en Authorization.
+  if (token) h.Authorization = 'Bearer ' + token; else if (!/^sb_/.test(String(cfg.anon))) h.Authorization = 'Bearer ' + cfg.anon;
   if (extra) Object.keys(extra).forEach(function (k) { h[k] = extra[k]; });
   let r;
   try { r = await f(String(cfg.url).replace(/\/+$/, '') + path, { method: method, headers: h, body: body === undefined ? undefined : JSON.stringify(body) }); }
