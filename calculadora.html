@@ -242,6 +242,8 @@ window.LIQUIDA_CFG={"endpoint": "https://formspree.io/f/mkjjodoz", "email": ""};
 window.LIQUIDA_SB={"url":"https://dvhjimeelatvtojweyqj.supabase.co","anon":"sb_publishable_Ifd57BFp0pjAJohtGmsT9A_PNAbP28W"};
 window.LIQUIDA_LIC={"pub": {"kty":"EC","crv":"P-256","x":"jgbedcVWIsf8hE0BQABMJshOhnUpZImEkaOREY2D6Xw","y":"uwcfwYZGsqd-Jno9jaM_cDX3iPfHDMx-HgRZ-OHvj4M"}, "pay": {"mensual": "", "anual": ""}, "whatsapp": "51960250506", "yape": "51960250506"};
 /*PURE*/
+function hasO(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+
 const RMV = 1230, UIT = 5500, ASIG = RMV * 0.10;
 const REG = {
   general: { n: 'Régimen general', g: 1, c: 1, v: 30 },
@@ -272,7 +274,7 @@ function gratificacion(o) {
 }
 function cts(o) {
   const f = REG[o.reg], c = computable(o);
-  const gl = (o.gratiLast === '' || o.gratiLast == null) ? c * f.g : Number(o.gratiLast);
+  const gl = (o.gratiLast === '' || o.gratiLast == null || !isFinite(Number(o.gratiLast)) || Number(o.gratiLast) < 0) ? c * f.g : Number(o.gratiLast);
   const sexto = gl / 6, base = c + sexto;
   const mm = Math.min(6, Math.max(0, o.meses || 0)), dd = mm >= 6 ? 0 : Math.min(29, Math.max(0, o.dias || 0));
   const total = base * f.c * (mm / 12 + dd / 360);
@@ -428,10 +430,10 @@ function boleta(w, nov, period) {
   if (sist === 'onp') {
     put(des, 'onp', 'ONP (13%)', afecta * 0.13);
   } else if (sist === 'afp') {
-    const a = AFP[w.afp] || AFP.integra, com = w.comision === 'mixta' ? 0 : a.flujo, bs = Math.min(afecta, AFP_TOPE);
+    const a = hasO(AFP, w.afp) ? AFP[w.afp] : AFP.integra, com = w.comision === 'mixta' ? 0 : a.flujo, bs = afecta, bp = Math.min(afecta, AFP_TOPE);   // el tope solo rige para la prima
     put(des, 'afp1', a.n + ': aporte obligatorio (' + AFP_APORTE + '%)', bs * AFP_APORTE / 100);
     put(des, 'afp2', a.n + ': comisión (' + com + '%)', bs * com / 100);
-    put(des, 'afp3', a.n + ': prima de seguro (' + AFP_PRIMA + '%)', bs * AFP_PRIMA / 100);
+    put(des, 'afp3', a.n + ': prima de seguro (' + AFP_PRIMA + '%)', bp * AFP_PRIMA / 100);
   }
   des.forEach(function (d) { pen += d.v; });
   pen = r2(pen);
@@ -722,7 +724,7 @@ function cleanW(w) {
   if (!w || typeof w !== 'object' || typeof w.id !== 'string' || !/^[A-Za-z0-9_-]{1,40}$/.test(w.id)) return null;
   const t = function (x, n) { return String(x == null ? '' : x).slice(0, n || 80); };
   return { id: w.id, name: t(w.name), dni: t(w.dni, 20), sueldo: Math.max(0, Number(w.sueldo) || 0), asig: !!w.asig,
-    reg: REG[w.reg] ? w.reg : 'general', pension: t(w.pension, 10), afp: t(w.afp, 20), comision: t(w.comision, 10), eps: !!w.eps };
+    reg: hasO(REG, w.reg) ? w.reg : 'general', pension: t(w.pension, 10), afp: t(w.afp, 20), comision: t(w.comision, 10), eps: !!w.eps };
 }
 function cleanWs(a) { return (Array.isArray(a) ? a : []).slice(0, 500).map(cleanW).filter(Boolean); }
 function cleanNov(n) {
@@ -753,6 +755,10 @@ const LIC = window.LIQUIDA_LIC || {};
 const SBC = window.LIQUIDA_SB || {};
 function sbOn() { return /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(String(SBC.url || '').replace(/\/+$/, '')) && String(SBC.anon || '').length > 20; }
 const SBKEY = 'liquida.sb.v1';
+const CALCS = [
+  { id: 'grati', n: 'Gratificación' }, { id: 'cts', n: 'CTS' }, { id: 'vac', n: 'Vacaciones' },
+  { id: 'liq', n: 'Liquidación' }, { id: 'hon', n: 'Honorarios' }, { id: 'neto', n: 'Sueldo neto' }
+];
 function licOn() { return !!LIC.pub; }          // con clave pública configurada, Premium exige un código válido
 let S = {
   plan: 'anual', premium: false, tab: 'calc', calc: 'grati', workers: [],
@@ -762,12 +768,27 @@ let S = {
   f: { sueldo: 2500, asig: false, varProm: 0, reg: 'general', eps: false, meses: 6, dias: 0, gratiLast: '',
        modo: 'trunca', diasGoce: 15, ingreso: iso(ago), cese: iso(today), vencidos: 0, despido: false, monto: 5000, susp: false, pension: 'afp', afpPct: 12.5 }
 };
+const F0 = JSON.parse(JSON.stringify(S.f));
+// Solo se aceptan los campos conocidos, con su tipo y rangos razonables; lo demás se ignora.
+function mergeF(g) {
+  if (!g || typeof g !== 'object') return;
+  Object.keys(F0).forEach(function (k) {
+    const d = F0[k], v = g[k]; if (v === undefined || v === null) return;
+    if (typeof d === 'boolean') S.f[k] = !!v;
+    else if (k === 'ingreso' || k === 'cese') { if (/^\d{4}-\d{2}-\d{2}$/.test(String(v)) && !isNaN(Date.parse(v))) S.f[k] = String(v); }
+    else if (k === 'reg') { if (typeof v === 'string' && hasO(REG, v)) S.f[k] = v; }
+    else if (k === 'pension') { if (['afp', 'onp', 'none'].indexOf(v) >= 0) S.f[k] = v; }
+    else if (k === 'modo') { if (v === 'trunca' || v === 'goce') S.f[k] = v; }
+    else if (k === 'gratiLast') { S.f[k] = (v === '' || !isFinite(Number(v)) || Number(v) < 0) ? '' : Math.min(1e9, Number(v)); }
+    else if (typeof d === 'number') { const n = Number(v); if (isFinite(n)) S.f[k] = Math.min(k === 'afpPct' ? 100 : 1e9, Math.max(0, n)); }
+  });
+}
 try {
   const j = JSON.parse(localStorage.getItem(KEY) || 'null');
   if (j) {
     S.premium = !licOn() && !!j.premium;        // el «premium» guardado por la demo no vale cuando hay cobro
     S.licCode = typeof j.lic === 'string' ? j.lic : '';
-    S.workers = cleanWs(j.workers); S.calc = j.calc || S.calc; Object.assign(S.f, j.f || {});
+    S.workers = cleanWs(j.workers); S.calc = CALCS.some(function (c) { return c.id === j.calc; }) ? j.calc : S.calc; mergeF(j.f);
     if (j.nov && typeof j.nov === 'object') S.nov = cleanNov(j.nov);
     if (j.empresa && typeof j.empresa === 'object') S.empresa = { name: String(j.empresa.name || ''), ruc: String(j.empresa.ruc || '') };
   }
@@ -870,11 +891,6 @@ function exportButtons(kind) {
   if (!S.premium) return '<button type="button" class="btn ghost block" data-act="prem">' + ICON.lock + ' Exportar a PDF y Excel (Premium)</button>';
   return '<div class="grid2"><button type="button" class="btn ghost" data-act="csv-' + kind + '">Descargar Excel (CSV)</button><button type="button" class="btn ghost" data-act="pdf-' + kind + '">Guardar como PDF</button></div>';
 }
-const CALCS = [
-  { id: 'grati', n: 'Gratificación' }, { id: 'cts', n: 'CTS' }, { id: 'vac', n: 'Vacaciones' },
-  { id: 'liq', n: 'Liquidación' }, { id: 'hon', n: 'Honorarios' }, { id: 'neto', n: 'Sueldo neto' }
-];
-
 function fld(label, k, type, hint) {
   type = type || 'number';
   const num = type === 'number';
@@ -943,8 +959,9 @@ function formHTML() {
 }
 
 function compute() {
-  const f = S.f, c = computable(f), rg = REG[f.reg];
+  const f = S.f, rg = REG[f.reg];
   const base = { sueldo: Number(f.sueldo) || 0, asig: !!f.asig, varProm: Number(f.varProm) || 0, reg: f.reg };
+  const c = computable(base);
   if (S.calc === 'grati') {
     const g = gratificacion(Object.assign({ meses: Number(f.meses), eps: !!f.eps }, base));
     const rows = [['Remuneración computable', g.comp], ['Gratificación (' + f.meses + '/6)', g.base], ['Bonificación extraordinaria ' + (f.eps ? '6.75%' : '9%'), g.bon]];
@@ -1031,7 +1048,7 @@ function sistLabel(w) {
   const s = w.pension || 'afp';
   if (s === 'onp') return 'ONP 13%';
   if (s === 'none') return 'Sin pensión';
-  return (AFP[w.afp] || AFP.integra).n + (w.comision === 'mixta' ? ' (mixta)' : '');
+  return (hasO(AFP, w.afp) ? AFP[w.afp] : AFP.integra).n + (w.comision === 'mixta' ? ' (mixta)' : '');
 }
 function nvOf(id) { return (S.nov[S.period] || {})[id] || {}; }
 function planBlock() { return planillaMes(S.workers, S.nov[S.period] || {}, S.period); }
@@ -1123,7 +1140,7 @@ function guideView() {
   const rows = [['Remuneración Mínima Vital', 'S/ 1,230 (desde el 1 de oct. 2026)'], ['Asignación familiar (10% RMV)', 'S/ ' + ASIG.toFixed(2)], ['UIT 2026', fmt(UIT)],
     ['Gratificaciones', 'Jul. y dic. · 1 sueldo + 9% (EsSalud) o 6.75% (EPS)'], ['CTS', 'Depósito hasta 15 may. y 15 nov. · 1/12 por mes'], ['Vacaciones', '30 días (general) · 15 días (REMYPE)'],
     ['Retención 4.ª categoría', '8% si el recibo por honorarios supera S/ 1,500'], ['Pensión', 'ONP 13% · AFP ≈ 12–13% (varía)'], ['Renta 5.ª categoría', 'Se deducen 7 UIT; tramos 8%, 14%, 17%, 20%, 30%'], ['Despido arbitrario', '1.5 sueldos por año, tope 12 (general)'],
-    ['Planilla: AFP', 'Aporte 10% + prima 1.37% + comisión según AFP · tope referencial S/ ' + AFP_TOPE.toLocaleString('en-US') + ' (SBS, abr.–jun. 2026)'],
+    ['Planilla: AFP', 'Aporte 10% + prima 1.37% + comisión según AFP · tope solo de la prima S/ ' + AFP_TOPE.toLocaleString('en-US') + ' (valor referencial del 2.º trimestre de 2026; la SBS lo actualiza cada trimestre)'],
     ['Planilla: EsSalud', '9% a cargo del empleador; no aplica a la gratificación'],
     ['Planilla: horas extras', '25% las 2 primeras horas · 35% desde la 3.ª · valor hora = remuneración ÷ 30 ÷ 8'],
     ['Planilla: retención 5.ª', 'Divisores SUNAT: ene–mar 12 · abr 9 · may–jul 8 · ago 5 · set–nov 4 · dic saldo']];
@@ -1140,6 +1157,7 @@ function guideView() {
   return h;
 }
 function fixF() {
+  if (!hasO(REG, S.f.reg)) S.f.reg = 'general';
   const f = S.f, mx = (S.calc === 'grati' || S.calc === 'cts') ? 6 : 11;
   if (f.meses !== '' && f.meses != null) f.meses = Math.min(mx, Math.max(0, Math.floor(Number(f.meses) || 0)));
   if (f.dias !== '' && f.dias != null) f.dias = (S.calc === 'cts' && f.meses >= 6) ? 0 : Math.min(29, Math.max(0, Math.floor(Number(f.dias) || 0)));
@@ -1147,7 +1165,8 @@ function fixF() {
 function render() {
   fixF();
   if (S.sub) syncSubPrem();
-  let fk = null;
+  let fk = null, fid = null;
+  try { const ae0 = document.activeElement; if (ae0 && ae0.id && /^f-[A-Za-z]+$/.test(ae0.id)) fid = ae0.id; } catch (e) {}
   try { const ae = document.activeElement; if (ae && ae.dataset && ae.getAttribute && ['tab', 'calc', 'modo'].indexOf(ae.dataset.act) >= 0) fk = (ae.dataset.act || '') + '|' + (ae.dataset.v || ae.dataset.k || ''); } catch (e) {}
   const t = S.tab;
   let h = '<h1 class="sr">Liquida: calculadora de beneficios laborales en Perú</h1><header class="top"><div class="brand"><svg class="logo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9"/><path d="M9 24V10M9 10h7a4 4 0 010 8H9M17 18l7 6"/></svg><div>Liquida<small>Beneficios laborales Perú</small></div></div>' +
@@ -1157,6 +1176,7 @@ function render() {
   h += t === 'calc' ? calcView() : t === 'team' ? teamView() : t === 'plan' ? planillaView() : guideView();
   h += '<footer class="disc"><span><a href="beneficios-sociales-peru.html">Beneficios</a> · <a href="precios.html">Precios</a> · <a href="index.html">Inicio</a></span><span>Cálculos referenciales, no constituyen asesoría legal ni financiera.</span></footer>';
   app.innerHTML = h;
+  if (fid) { try { const el = document.getElementById(fid); if (el && el.focus) el.focus(); } catch (e) {} }
   if (fk) { try { [].slice.call(app.querySelectorAll('button[data-act][data-v]')).some(function (el) { if ((el.dataset.act || '') + '|' + (el.dataset.v || el.dataset.k || '') === fk) { el.focus(); return true; } return false; }); } catch (e) {} }
 }
 
@@ -1475,10 +1495,12 @@ app.addEventListener('input', function (e) {
   if (t.type === 'checkbox') {
     if (k === 'despido' && t.checked && !S.premium) { t.checked = false; openPremium(); return; }
     S.f[k] = t.checked;
-  } else if (t.type === 'number') S.f[k] = t.value === '' ? '' : Math.max(0, Number(t.value) || 0);
+  } else if (t.type === 'number') S.f[k] = t.value === '' ? '' : Math.min(k === 'afpPct' ? 100 : 1e9, Math.max(0, Number(t.value) || 0));
   else S.f[k] = t.value;
   if (k === 'gratiLast' && t.value === '') S.f[k] = '';
-  save(); setRes();
+  save();
+  // los selectores que cambian otros campos (p. ej. meses de CTS → días) vuelven a dibujar el formulario
+  if (t.dataset.re || (k === 'meses' && S.calc === 'cts')) render(); else setRes();
 });
 app.addEventListener('change', function (e) {
   if (e.target.dataset.actChange === 'pick') {
@@ -1624,7 +1646,7 @@ document.addEventListener('keydown', function (e) {
       if (k === 'calc' && CALCS.some(function (c) { return c.id === v; })) { S.calc = v; S.tab = 'calc'; }
       else if (k === 'tab' && ['calc', 'team', 'plan', 'guide'].indexOf(v) >= 0) S.tab = v;
       else if (['sueldo', 'varProm', 'meses', 'dias', 'monto'].indexOf(k) >= 0 && v !== '' && !isNaN(v)) S.f[k] = Math.min(k === 'meses' ? 12 : k === 'dias' ? 29 : 1e7, Math.max(0, Number(v)));
-      else if (k === 'reg' && REG[v]) S.f.reg = v;
+      else if (k === 'reg' && hasO(REG, v)) S.f.reg = v;
     });
   } catch (e) {}
 })();
