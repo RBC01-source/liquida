@@ -706,7 +706,7 @@ function sbSignIn(cfg, f, email, pass) { return sbCall(cfg, f, 'POST', '/auth/v1
 function sbRefresh(cfg, f, rt) { return sbCall(cfg, f, 'POST', '/auth/v1/token?grant_type=refresh_token', { refresh_token: rt }); }
 function sbRecover(cfg, f, email, redir) { return sbCall(cfg, f, 'POST', '/auth/v1/recover' + sbRedir(redir), { email: email }); }
 function sbUpdatePass(cfg, f, token, pass) { return sbCall(cfg, f, 'PUT', '/auth/v1/user', { password: pass }, token); }
-function sbSignOut(cfg, f, token) { return sbCall(cfg, f, 'POST', '/auth/v1/logout', undefined, token).catch(function () {}); }
+function sbSignOut(cfg, f, token) { return sbCall(cfg, f, 'POST', '/auth/v1/logout?scope=local', undefined, token).catch(function () {}); }
 async function sbSuscripcion(cfg, f, token, email) {
   const rows = await sbCall(cfg, f, 'GET', '/rest/v1/suscripciones?select=plan,vence&email=eq.' + encodeURIComponent(String(email).toLowerCase()) + '&limit=1', undefined, token);
   const r = Array.isArray(rows) ? rows[0] : null;
@@ -723,7 +723,7 @@ async function sbTraer(cfg, f, token) {
 function cleanW(w) {
   if (!w || typeof w !== 'object' || typeof w.id !== 'string' || !/^[A-Za-z0-9_-]{1,40}$/.test(w.id)) return null;
   const t = function (x, n) { return String(x == null ? '' : x).slice(0, n || 80); };
-  return { id: w.id, name: t(w.name), dni: t(w.dni, 20), sueldo: Math.max(0, Number(w.sueldo) || 0), asig: !!w.asig,
+  return { id: w.id, name: t(w.name), dni: t(w.dni, 20), sueldo: isFinite(Number(w.sueldo)) ? Math.min(1e9, Math.max(0, Number(w.sueldo))) : 0, asig: !!w.asig,
     reg: hasO(REG, w.reg) ? w.reg : 'general', pension: t(w.pension, 10), afp: t(w.afp, 20), comision: t(w.comision, 10), eps: !!w.eps };
 }
 function cleanWs(a) { return (Array.isArray(a) ? a : []).slice(0, 500).map(cleanW).filter(Boolean); }
@@ -1218,12 +1218,30 @@ function yapeFmt(n) { const m = /^51(\d{3})(\d{3})(\d{3})$/.exec(n); return m ? 
 function finishPrem() { if (licOn()) S.premium = !!S.lic || !!S.subPrem; }
 function calcUrl() { try { return location.href.replace(/[?#].*$/, ''); } catch (e) { return ''; } }
 function sbSave() { try { if (S.sb.sess) localStorage.setItem(SBKEY, JSON.stringify(S.sb.sess)); else localStorage.removeItem(SBKEY); } catch (e) {} }
+function sbStored() { try { const j = JSON.parse(localStorage.getItem(SBKEY) || 'null'); return j && typeof j === 'object' && typeof j.refresh_token === 'string' && typeof j.access_token === 'string' && typeof j.uid === 'string' && isFinite(j.exp) ? j : null; } catch (e) { return null; } }
+// Sincroniza varias pestañas: si en otra se cierra la sesión (o se renueva), esta lo refleja.
+window.addEventListener('storage', function (e) {
+  if (e.key !== SBKEY) return;
+  const n = sbStored();
+  if (!n) { if (S.sb.sess) { S.sb.sess = null; S.sub = null; S.subPrem = false; finishPrem(); render(); } }
+  else if (S.sb.sess && S.sb.sess.uid === n.uid) S.sb.sess = n;
+});
 function sbDrop() { S.sb.sess = null; S.sub = null; S.subPrem = false; S.sb.subErr = false; S.sb.confirmLoad = false; S.sb.confirmWipe = false; sbSave(); finishPrem(); }
 async function sbToken() {
   const ss = S.sb.sess; if (!ss) return null;
   if (ss.exp - 60 > Math.floor(Date.now() / 1000)) return ss.access_token;
+  // otra pestaña pudo renovar ya el acceso (el refresh token se rota): se adopta su sesión en vez de gastar el token viejo
+  const otra = sbStored();
+  if (otra && otra.uid === ss.uid && otra.refresh_token !== ss.refresh_token && otra.exp - 60 > Math.floor(Date.now() / 1000)) { S.sb.sess = otra; return otra.access_token; }
   try { const n = sbSession(await sbRefresh(SBC, fetch, ss.refresh_token), Date.now()); if (!n) throw new Error('x'); S.sb.sess = n; sbSave(); return n.access_token; }
-  catch (e) { if (e.status === 400 || e.status === 401 || e.status === 403) sbDrop(); return null; }   // red o 5xx: se conserva la sesión
+  catch (e) {
+    if (e.status === 400 || e.status === 401 || e.status === 403) {
+      const o2 = sbStored();                       // si otra pestaña guardó una sesión distinta y válida, no se borra
+      if (o2 && o2.uid === ss.uid && o2.refresh_token !== ss.refresh_token) { S.sb.sess = o2; return o2.exp - 60 > Math.floor(Date.now() / 1000) ? o2.access_token : null; }
+      sbDrop();
+    }
+    return null;
+  }   // red o 5xx: se conserva la sesión
 }
 // La suscripción se confirma con el servidor en cada carga; sin internet no se concede Premium por cuenta.
 function syncSubPrem() { S.subPrem = !!S.sub && sbSubActiva(S.sub, iso(new Date())); finishPrem(); }
