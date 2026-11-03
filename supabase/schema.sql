@@ -13,6 +13,7 @@ create table if not exists public.suscripciones (
 alter table public.suscripciones enable row level security;
 
 -- El correo se guarda siempre en minúsculas, aunque lo escribas con mayúsculas en el panel.
+update public.suscripciones set email = lower(btrim(email)) where email <> lower(btrim(email));
 alter table public.suscripciones drop constraint if exists suscripciones_email_min;
 alter table public.suscripciones add constraint suscripciones_email_min check (email = lower(email));
 create or replace function public.suscripciones_minusculas() returns trigger language plpgsql set search_path = '' as $$
@@ -62,5 +63,7 @@ revoke all on public.suscripciones from anon;
 revoke all on public.datos from anon;
 
 -- 4) Permisos explícitos para usuarios con sesión (las políticas de arriba limitan a cada quien a lo suyo)
+revoke all on public.suscripciones from authenticated;
+revoke all on public.datos from authenticated;
 grant select on public.suscripciones to authenticated;
 grant select, insert, update, delete on public.datos to authenticated;

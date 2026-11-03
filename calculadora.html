@@ -57,7 +57,7 @@ svg{display:block}
 .chips{display:flex;gap:8px;align-items:center}
 .nav{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--key);padding:4px;border-radius:14px;margin-bottom:14px}
 .nav button{min-height:42px;border-radius:10px;font-weight:700;font-size:.88rem;color:var(--muted)}
-.nav button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.nav button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
 
 /* ---------- cards & forms ---------- */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow);display:grid;gap:14px}
@@ -89,7 +89,7 @@ a.btn{text-decoration:none}
 .chip.prem{background:var(--accent);color:var(--on-accent)}
 .seg{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
 .seg button{flex:none;min-height:38px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);font-weight:700;font-size:.88rem;color:var(--muted);background:var(--surface)}
-.seg button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.seg button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 
 /* ---------- results ---------- */
 .band{background:var(--band);color:var(--on-band);border-radius:16px;padding:16px;display:grid;gap:4px}
@@ -266,7 +266,7 @@ function span(a, b) {
 function computable(o) { return (o.sueldo || 0) + (o.asig ? ASIG : 0) + (o.varProm || 0); }
 function gratificacion(o) {
   const f = REG[o.reg], c = computable(o);
-  const base = c * f.g / 6 * o.meses;
+  const base = c * f.g / 6 * Math.min(6, Math.max(0, o.meses || 0));
   const bon = base * (o.eps ? 0.0675 : 0.09);
   return { comp: c, base: r2(base), bon: r2(bon), total: r2(base + bon) };
 }
@@ -280,7 +280,8 @@ function cts(o) {
 }
 function vacTrunca(o) {
   const f = REG[o.reg], c = computable(o);
-  return r2(c * (f.v / 30) * ((o.meses || 0) / 12 + (o.dias || 0) / 360));
+  const mm = Math.min(11, Math.max(0, o.meses || 0)), dd = Math.min(29, Math.max(0, o.dias || 0));
+  return r2(c * (f.v / 30) * (mm / 12 + dd / 360));
 }
 function liquidacion(o) {
   const f = REG[o.reg], c = computable(o), C = parseD(o.cese);
@@ -724,6 +725,20 @@ function cleanW(w) {
     reg: REG[w.reg] ? w.reg : 'general', pension: t(w.pension, 10), afp: t(w.afp, 20), comision: t(w.comision, 10), eps: !!w.eps };
 }
 function cleanWs(a) { return (Array.isArray(a) ? a : []).slice(0, 500).map(cleanW).filter(Boolean); }
+function cleanNov(n) {
+  const o = {}, K = ['faltas', 'tardanza', 'he25', 'he35', 'bonos', 'otros', 'mesesSem', 'remPrev', 'retPrev'];
+  if (!n || typeof n !== 'object') return o;
+  Object.keys(n).forEach(function (p) {
+    if (!/^\d{4}-\d{2}$/.test(p) || !n[p] || typeof n[p] !== 'object') return;
+    o[p] = {};
+    Object.keys(n[p]).forEach(function (id) {
+      const v = n[p][id]; if (!/^[A-Za-z0-9_-]{1,40}$/.test(id) || !v || typeof v !== 'object') return;
+      const c = {}; K.forEach(function (k) { if (v[k] !== undefined && v[k] !== '' && isFinite(Number(v[k]))) c[k] = Number(v[k]); });
+      o[p][id] = c;
+    });
+  });
+  return o;
+}
 function sbEstadoValido(e) { return !!e && typeof e === 'object' && Array.isArray(e.workers) && e.workers.length <= 500 && cleanWs(e.workers).length === e.workers.length && e.nov && typeof e.nov === 'object' && e.empresa && typeof e.empresa === 'object'; }
 /*ENDPURE*/
 
@@ -753,7 +768,7 @@ try {
     S.premium = !licOn() && !!j.premium;        // el «premium» guardado por la demo no vale cuando hay cobro
     S.licCode = typeof j.lic === 'string' ? j.lic : '';
     S.workers = cleanWs(j.workers); S.calc = j.calc || S.calc; Object.assign(S.f, j.f || {});
-    if (j.nov && typeof j.nov === 'object') S.nov = j.nov;
+    if (j.nov && typeof j.nov === 'object') S.nov = cleanNov(j.nov);
     if (j.empresa && typeof j.empresa === 'object') S.empresa = { name: String(j.empresa.name || ''), ruc: String(j.empresa.ruc || '') };
   }
 } catch (e) {}
@@ -798,9 +813,9 @@ function loadStats() {
     const snap = await DB.doc('data/users/' + UID + '/state').get();
     if (snap.exists) {
       const c = snap.data() || {};
-      if (!S.workers.length && Array.isArray(c.workers)) S.workers = c.workers;
+      if (!S.workers.length && Array.isArray(c.workers)) S.workers = cleanWs(c.workers);
       if (c.premium && !licOn()) S.premium = true;
-      if (!Object.keys(S.nov).length && c.nov && typeof c.nov === 'object') S.nov = c.nov;
+      if (!Object.keys(S.nov).length && c.nov && typeof c.nov === 'object') S.nov = cleanNov(c.nov);
       if (!S.empresa.name && !S.empresa.ruc && c.empresa) S.empresa = { name: String(c.empresa.name || ''), ruc: String(c.empresa.ruc || '') };
       try { localStorage.setItem(KEY, localBlob()); } catch (e) {}
     }
@@ -834,7 +849,7 @@ const ICON = {
   lock: '<svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>'
 };
 function siteMode() { return !!window.LIQUIDA_CFG; }
-function csvCell(v) { v = String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+function csvCell(v) { v = String(v); if (/^[=+\-@\t\r]/.test(v) && isNaN(Number(v))) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
 function downloadCSV(name, rows) {
   const text = '\uFEFF' + rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n');
   try {
@@ -878,7 +893,7 @@ function regSel() {
 function workerPick() {
   if (!S.workers.length) return '';
   let o = '<option value="">— Elegir de mi equipo —</option>';
-  S.workers.forEach(function (w) { o += '<option value="' + w.id + '">' + esc(w.name) + '</option>'; });
+  S.workers.forEach(function (w) { o += '<option value="' + esc(w.id) + '">' + esc(w.name) + '</option>'; });
   return '<div class="fld"><label for="wp">Trabajador guardado</label><select id="wp" data-act-change="pick">' + o + '</select></div>';
 }
 function commonFields() {
@@ -904,9 +919,9 @@ function formHTML() {
       fld('Última gratificación (S/, opcional)', 'gratiLast', 'number', 'Vacío = se calcula con el sueldo');
   }
   if (S.calc === 'vac') {
-    let h = commonFields() + '<div class="fld"><span class="l">¿Qué quieres calcular?</span><div class="seg" role="tablist">' +
-      '<button type="button" role="tab" data-act="modo" data-v="trunca" aria-selected="' + (f.modo === 'trunca') + '">Vacaciones truncas</button>' +
-      '<button type="button" role="tab" data-act="modo" data-v="goce" aria-selected="' + (f.modo === 'goce') + '">Pago por días a gozar</button></div></div>';
+    let h = commonFields() + '<div class="fld"><span class="l">¿Qué quieres calcular?</span><div class="seg" role="group" aria-label="Qué calcular">' +
+      '<button type="button" data-act="modo" data-v="trunca" aria-pressed="' + (f.modo === 'trunca') + '">Vacaciones truncas</button>' +
+      '<button type="button" data-act="modo" data-v="goce" aria-pressed="' + (f.modo === 'goce') + '">Pago por días a gozar</button></div></div>';
     if (f.modo === 'trunca') {
       h += '<div class="grid2"><div class="fld"><label for="f-meses">Meses (máx. 11)</label><select id="f-meses" data-k="meses">' + monthsSel('meses', 11) + '</select></div>' +
         '<div class="fld"><label for="f-dias">Días adicionales</label><select id="f-dias" data-k="dias">' + monthsSel('dias', 29) + '</select></div></div>';
@@ -1001,8 +1016,8 @@ function resultHTML() {
 }
 
 function calcView() {
-  let h = '<section class="card" id="formcard"><div class="seg" role="tablist" aria-label="Calculadoras">';
-  CALCS.forEach(function (c) { h += '<button type="button" role="tab" data-act="calc" data-v="' + c.id + '" aria-selected="' + (S.calc === c.id) + '">' + c.n + '</button>'; });
+  let h = '<section class="card" id="formcard"><div class="seg" role="group" aria-label="Calculadoras">';
+  CALCS.forEach(function (c) { h += '<button type="button" data-act="calc" data-v="' + c.id + '" aria-pressed="' + (S.calc === c.id) + '">' + c.n + '</button>'; });
   h += '</div><div id="form" style="display:grid;gap:14px">' + formHTML() + '</div></section>';
   h += '<section class="card" id="res" aria-live="polite">' + resultHTML() + '</section>';
   return h;
@@ -1124,24 +1139,30 @@ function guideView() {
     '<p class="fine">Confirma montos y fechas en gob.pe/trabajo y sunat.gob.pe antes de pagar o firmar una liquidación.</p></section>';
   return h;
 }
+function fixF() {
+  const f = S.f, mx = (S.calc === 'grati' || S.calc === 'cts') ? 6 : 11;
+  if (f.meses !== '' && f.meses != null) f.meses = Math.min(mx, Math.max(0, Math.floor(Number(f.meses) || 0)));
+  if (f.dias !== '' && f.dias != null) f.dias = (S.calc === 'cts' && f.meses >= 6) ? 0 : Math.min(29, Math.max(0, Math.floor(Number(f.dias) || 0)));
+}
 function render() {
+  fixF();
   if (S.sub) syncSubPrem();
   let fk = null;
-  try { const ae = document.activeElement; if (ae && ae.getAttribute && ae.getAttribute('role') === 'tab') fk = (ae.dataset.act || '') + '|' + (ae.dataset.v || ae.dataset.k || ''); } catch (e) {}
+  try { const ae = document.activeElement; if (ae && ae.dataset && ae.getAttribute && ['tab', 'calc', 'modo'].indexOf(ae.dataset.act) >= 0) fk = (ae.dataset.act || '') + '|' + (ae.dataset.v || ae.dataset.k || ''); } catch (e) {}
   const t = S.tab;
   let h = '<h1 class="sr">Liquida: calculadora de beneficios laborales en Perú</h1><header class="top"><div class="brand"><svg class="logo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9"/><path d="M9 24V10M9 10h7a4 4 0 010 8H9M17 18l7 6"/></svg><div>Liquida<small>Beneficios laborales Perú</small></div></div>' +
     '<div class="chips">' + (sbOn() ? '<button type="button" class="pchip" data-act="cuenta" aria-label="Mi cuenta">' + (S.sb.sess ? '<b>Mi cuenta</b>' : 'Entrar') + '</button>' : '') + '<button type="button" class="pchip" data-act="prem" aria-label="Plan">' + (S.premium ? '<b>Premium</b>' : 'Plan <b>Gratis</b>') + '</button></div></header>' +
-    '<nav class="nav" role="tablist">' + [['calc', 'Calcular'], ['team', 'Equipo'], ['plan', 'Planilla'], ['guide', 'Beneficios']].map(function (x) {
-      return '<button type="button" role="tab" data-act="tab" data-v="' + x[0] + '" aria-selected="' + (t === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</nav>';
+    '<nav class="nav" aria-label="Secciones">' + [['calc', 'Calcular'], ['team', 'Equipo'], ['plan', 'Planilla'], ['guide', 'Beneficios']].map(function (x) {
+      return '<button type="button" data-act="tab" data-v="' + x[0] + '" aria-pressed="' + (t === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</nav>';
   h += t === 'calc' ? calcView() : t === 'team' ? teamView() : t === 'plan' ? planillaView() : guideView();
   h += '<footer class="disc"><span><a href="beneficios-sociales-peru.html">Beneficios</a> · <a href="precios.html">Precios</a> · <a href="index.html">Inicio</a></span><span>Cálculos referenciales, no constituyen asesoría legal ni financiera.</span></footer>';
   app.innerHTML = h;
-  if (fk) { try { [].slice.call(app.querySelectorAll('[role="tab"]')).some(function (el) { if ((el.dataset.act || '') + '|' + (el.dataset.v || el.dataset.k || '') === fk) { el.focus(); return true; } return false; }); } catch (e) {} }
+  if (fk) { try { [].slice.call(app.querySelectorAll('button[data-act][data-v]')).some(function (el) { if ((el.dataset.act || '') + '|' + (el.dataset.v || el.dataset.k || '') === fk) { el.focus(); return true; } return false; }); } catch (e) {} }
 }
 
-let lastFocus = null;
+let lastFocus = null, lastKey = null;
 function openSheet(html) {
-  try { if (sheet.hidden) lastFocus = document.activeElement; } catch (e) {}
+  try { if (sheet.hidden) { lastFocus = document.activeElement; lastKey = lastFocus && lastFocus.dataset ? [lastFocus.dataset.act, lastFocus.dataset.id, lastFocus.dataset.v].join('|') : null; } } catch (e) {}
   sheet.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-title" tabindex="-1">' + html + '</div>';
   sheet.hidden = false;
   try {
@@ -1151,7 +1172,13 @@ function openSheet(html) {
     (first || sheet.querySelector('.sheet')).focus();
   } catch (e) {}
 }
-function closeSheet() { sheet.hidden = true; sheet.innerHTML = ''; S.sb.open = false; S.sb.confirmWipe = false; try { document.body.style.overflow = ''; if (lastFocus && lastFocus.focus && document.contains(lastFocus)) lastFocus.focus(); } catch (e) {} lastFocus = null; }
+function closeSheet() { sheet.hidden = true; sheet.innerHTML = ''; S.sb.open = false; S.sb.confirmWipe = false; try {
+    document.body.style.overflow = '';
+    if (lastFocus && lastFocus.focus && document.contains(lastFocus)) lastFocus.focus();
+    else if (lastKey) { const els = [].slice.call(app.querySelectorAll('button[data-act]')), el = els.filter(function (x) { return [x.dataset.act, x.dataset.id, x.dataset.v].join('|') === lastKey; })[0] || els.filter(function (x) { return x.dataset.act === lastKey.split('|')[0]; })[0]; if (el) el.focus(); }
+  } catch (e) {}
+  lastFocus = null; lastKey = null;
+}
 function dmy(s) { const p = String(s).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(s); }
 function licMessage(r) {
   if (r.reason === 'expired') return 'Este código venció el ' + dmy(r.exp) + '. Pide uno nuevo para seguir con Premium.';
@@ -1176,14 +1203,16 @@ async function sbToken() {
   const ss = S.sb.sess; if (!ss) return null;
   if (ss.exp - 60 > Math.floor(Date.now() / 1000)) return ss.access_token;
   try { const n = sbSession(await sbRefresh(SBC, fetch, ss.refresh_token), Date.now()); if (!n) throw new Error('x'); S.sb.sess = n; sbSave(); return n.access_token; }
-  catch (e) { if (e.status === 400 || e.status === 401 || e.status === 403) sbDrop(); return null; }
+  catch (e) { if (e.status === 400 || e.status === 401 || e.status === 403) sbDrop(); return null; }   // red o 5xx: se conserva la sesión
 }
 // La suscripción se confirma con el servidor en cada carga; sin internet no se concede Premium por cuenta.
 function syncSubPrem() { S.subPrem = !!S.sub && sbSubActiva(S.sub, iso(new Date())); finishPrem(); }
 async function sbRefreshSub() {
   const ses0 = S.sb.sess; if (!ses0) return;
   const uid = ses0.uid, mismo = function () { return !!S.sb.sess && S.sb.sess.uid === uid; };
-  const tok = await sbToken(); if (!tok || !mismo()) return;
+  const tok = await sbToken();
+  if (!tok) { if (mismo()) { S.sub = null; S.sb.subErr = true; syncSubPrem(); } return; }   // sin red o servidor caído (si la sesión fue rechazada, sbDrop ya la quitó)
+  if (!mismo()) return;
   try {
     const sub = await sbSuscripcion(SBC, fetch, tok, S.sb.sess.email);
     if (!mismo()) return;                 // la sesión cambió mientras esperábamos: se descarta la respuesta
@@ -1257,10 +1286,12 @@ async function sbAct(a) {
       B.busy = true; openCuenta(); await sbGuardar(SBC, fetch, tok, B.sess.uid, sbEstado()); B.msg = 'Listo: tus datos quedaron guardados en la nube.'; B.ok = true;
     } else if (a === 'sb-load-ok') {
       const tok = await sbToken(); if (!tok) { B.msg = 'Tu sesión venció. Entra de nuevo.'; B.confirmLoad = false; return openCuenta(); }
+      const uid0 = B.sess && B.sess.uid;
       B.busy = true; const r = await sbTraer(SBC, fetch, tok); B.confirmLoad = false;
+      if (!B.sess || B.sess.uid !== uid0) { B.busy = false; return; }   // la sesión cambió (cerró o borró) mientras esperábamos
       if (!r) B.msg = 'Todavía no hay datos guardados en tu cuenta.';
       else if (!sbEstadoValido(r.estado)) B.msg = 'Los datos de la nube no tienen el formato esperado.';
-      else { S.workers = cleanWs(r.estado.workers); S.nov = r.estado.nov; S.empresa = { name: String(r.estado.empresa.name || ''), ruc: String(r.estado.empresa.ruc || '') }; save(); render(); B.msg = 'Listo: se cargaron tus datos de la nube.'; B.ok = true; }
+      else { S.workers = cleanWs(r.estado.workers); S.nov = cleanNov(r.estado.nov); S.empresa = { name: String(r.estado.empresa.name || ''), ruc: String(r.estado.empresa.ruc || '') }; save(); render(); B.msg = 'Listo: se cargaron tus datos de la nube.'; B.ok = true; }
     } else if (a === 'sb-newpass') {
       const np = val('sb-new');
       if (np.length < 8) { B.msg = 'La contraseña debe tener al menos 8 caracteres.'; return openNuevaClave(); }
@@ -1561,7 +1592,7 @@ function onClick(e) {
     const w = findW(b.dataset.id); if (!w) return;
     openSheet('<div class="sh-top"><h2>¿Eliminar a ' + esc(w.name) + '?</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div><p class="sub">Se borran también sus novedades. No se puede deshacer.</p><button type="button" class="btn block" data-act="del-ok" data-id="' + esc(w.id) + '">Sí, eliminar</button><button type="button" class="btn ghost block" data-act="close">Cancelar</button>');
   }
-  else if (a === 'del-ok') { closeSheet(); S.workers = S.workers.filter(function (w) { return w.id !== b.dataset.id; }); Object.keys(S.nov).forEach(function (p) { delete S.nov[p][b.dataset.id]; }); save(); render(); }
+  else if (a === 'del-ok') { closeSheet(); S.workers = S.workers.filter(function (w) { return w.id !== b.dataset.id; }); Object.keys(S.nov).forEach(function (p) { if (S.nov[p]) delete S.nov[p][b.dataset.id]; }); save(); render(); }
   else if (a === 'use') {
     const w = S.workers.filter(function (x) { return x.id === b.dataset.id; })[0];
     if (w) { S.f.sueldo = w.sueldo; S.f.asig = w.asig; S.f.reg = w.reg; S.tab = 'calc'; save(); render(); window.scrollTo(0, 0); }
@@ -1585,16 +1616,7 @@ document.addEventListener('keydown', function (e) {
     } catch (x) {}
   }
 });
-app.addEventListener('keydown', function (e) {
-  const t = e.target; if (!t || !t.getAttribute || t.getAttribute('role') !== 'tab') return;
-  const k = e.key; if (k !== 'ArrowRight' && k !== 'ArrowLeft' && k !== 'Home' && k !== 'End') return;
-  const lists = [].slice.call(app.querySelectorAll('[role="tablist"]')), li = lists.indexOf(t.parentNode);
-  const tabs = [].slice.call(t.parentNode.querySelectorAll('[role="tab"]')), i = tabs.indexOf(t);
-  const n = k === 'Home' ? 0 : k === 'End' ? tabs.length - 1 : (i + (k === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
-  e.preventDefault(); tabs[n].click();
-  const nl = app.querySelectorAll('[role="tablist"]')[li];
-  if (nl) { const nt = nl.querySelectorAll('[role="tab"]')[n]; if (nt) nt.focus(); }
-});
+
 (function () {
   try {
     location.hash.replace(/^#/, '').split('&').forEach(function (kv) {
