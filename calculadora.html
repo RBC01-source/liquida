@@ -706,6 +706,13 @@ function sbSignIn(cfg, f, email, pass) { return sbCall(cfg, f, 'POST', '/auth/v1
 function sbRefresh(cfg, f, rt) { return sbCall(cfg, f, 'POST', '/auth/v1/token?grant_type=refresh_token', { refresh_token: rt }); }
 function sbRecover(cfg, f, email, redir) { return sbCall(cfg, f, 'POST', '/auth/v1/recover' + sbRedir(redir), { email: email }); }
 function sbUpdatePass(cfg, f, token, pass) { return sbCall(cfg, f, 'PUT', '/auth/v1/user', { password: pass }, token); }
+// Revoca la sesión en el servidor; si el acceso ya venció, primero se renueva para poder cerrarla de verdad. Sin red falla en silencio.
+function sbRevoke(ss) {
+  if (!ss) return;
+  const now = Math.floor(Date.now() / 1000);
+  if (ss.exp - 30 > now) { sbSignOut(SBC, fetch, ss.access_token); return; }
+  sbRefresh(SBC, fetch, ss.refresh_token).then(function (r) { const n = sbSession(r, Date.now()); if (n) sbSignOut(SBC, fetch, n.access_token); }).catch(function () {});
+}
 function sbSignOut(cfg, f, token) { return sbCall(cfg, f, 'POST', '/auth/v1/logout?scope=local', undefined, token).catch(function () {}); }
 async function sbSuscripcion(cfg, f, token, email) {
   const rows = await sbCall(cfg, f, 'GET', '/rest/v1/suscripciones?select=plan,vence&email=eq.' + encodeURIComponent(String(email).toLowerCase()) + '&limit=1', undefined, token);
@@ -1585,7 +1592,7 @@ function onClick(e) {
   else if (a === 'sb-wipe') { S.sb.confirmWipe = true; openCuenta(); }
   else if (a === 'sb-wipe-no') { S.sb.confirmWipe = false; openCuenta(); }
   else if (a === 'sb-wipe-ok') {
-    const tk = S.sb.sess && S.sb.sess.access_token; if (tk) sbSignOut(SBC, fetch, tk);
+    sbRevoke(S.sb.sess);
     sbDrop();
     try { localStorage.removeItem(KEY); localStorage.removeItem(SKEY); localStorage.removeItem(FKEY); } catch (e) {}
     S.workers = []; S.nov = {}; S.empresa = { name: '', ruc: '' }; S.licCode = ''; S.lic = null; S.licInfo = null; finishPrem();
@@ -1593,7 +1600,7 @@ function onClick(e) {
   }
   else if (a === 'sb-adopt') { sbAdopt(); }
   else if (a === 'sb-adopt-no') { S.sb.pending = null; closeSheet(); }
-  else if (a === 'sb-out') { const tk = S.sb.sess && S.sb.sess.access_token; if (tk) sbSignOut(SBC, fetch, tk); sbDrop(); S.sb.msg = ''; closeSheet(); render(); toast('Sesión cerrada'); }
+  else if (a === 'sb-out') { sbRevoke(S.sb.sess); sbDrop(); S.sb.msg = ''; closeSheet(); render(); toast('Sesión cerrada'); }
   else if (a === 'sb-load') { S.sb.confirmLoad = true; S.sb.msg = ''; openCuenta(); }
   else if (a === 'sb-load-no') { S.sb.confirmLoad = false; openCuenta(); }
   else if (a === 'sb-login' || a === 'sb-signup' || a === 'sb-reset' || a === 'sb-save' || a === 'sb-load-ok' || a === 'sb-newpass') sbAct(a);
