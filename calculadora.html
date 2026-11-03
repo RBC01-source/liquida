@@ -1627,7 +1627,7 @@ function onClick(e) {
   else if (a === 'savew') {
     const name = document.getElementById('n-name').value.trim();
     if (!name) { toast('Escribe un nombre'); return; }
-    const data = { name: name, dni: document.getElementById('n-dni').value.trim(), sueldo: Math.max(0, Number(document.getElementById('n-sueldo').value) || 0),
+    const data = { name: name, dni: document.getElementById('n-dni').value.trim(), sueldo: Math.min(1e9, Math.max(0, Number(document.getElementById('n-sueldo').value) || 0)),
       asig: document.getElementById('n-asig').checked, reg: document.getElementById('n-reg').value,
       pension: document.getElementById('n-pension').value, afp: document.getElementById('n-afp').value, comision: document.getElementById('n-com').value,
       eps: document.getElementById('n-eps').checked };
