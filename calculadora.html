@@ -1167,6 +1167,7 @@ function guideView() {
 }
 function fixF() {
   if (!hasO(REG, S.f.reg)) S.f.reg = 'general';
+  if (!S.premium) S.f.despido = false;   // la casilla es Premium: sin Premium no queda marcada
   const f = S.f, mx = (S.calc === 'grati' || S.calc === 'cts') ? 6 : 11;
   if (f.meses !== '' && f.meses != null) f.meses = Math.min(mx, Math.max(0, Math.floor(Number(f.meses) || 0)));
   if (f.dias !== '' && f.dias != null) f.dias = (S.calc === 'cts' && f.meses >= 6) ? 0 : Math.min(29, Math.max(0, Math.floor(Number(f.dias) || 0)));
@@ -1234,8 +1235,15 @@ window.addEventListener('storage', function (e) {
   const n = sbStored();
   if (!n) { if (S.sb.sess) { S.sb.sess = null; S.sub = null; S.subPrem = false; finishPrem(); render(); } }
   else if (S.sb.sess && S.sb.sess.uid === n.uid) S.sb.sess = n;
+  else if (S.sb.sess) { S.sb.sess = null; S.sub = null; S.subPrem = false; finishPrem(); render(); }   // en otra pestaña entró otra cuenta: aquí se sale sin tocar lo guardado
 });
-function sbDrop() { S.sb.sess = null; S.sub = null; S.subPrem = false; S.sb.subErr = false; S.sb.confirmLoad = false; S.sb.confirmWipe = false; sbSave(); finishPrem(); }
+function sbDrop() {
+  const uid = S.sb.sess && S.sb.sess.uid;
+  S.sb.sess = null; S.sub = null; S.subPrem = false; S.sb.subErr = false; S.sb.confirmLoad = false; S.sb.confirmWipe = false;
+  const o = sbStored();
+  if (!o || !uid || o.uid === uid) sbSave();   // si otra pestaña guardó la sesión de otra cuenta, no se borra
+  finishPrem();
+}
 async function sbToken() {
   const ss = S.sb.sess; if (!ss) return null;
   if (ss.exp - 60 > Math.floor(Date.now() / 1000)) return ss.access_token;
@@ -1452,7 +1460,7 @@ async function firmarBoleta(w, b) {
   return { url: firmaUrl() + '#' + firmaToken(data, b64u(sig), K.pub), huella: K.pub.x.slice(0, 8), ts: ts };
 }
 function firmasLoad() { try { return JSON.parse(localStorage.getItem(FKEY)) || {}; } catch (e) { return {}; } }
-function firmaTrab(id) { const v = firmasLoad()[id + '|' + S.period]; return typeof v === 'string' && v.indexOf('data:image/png;base64,') === 0 ? v : ''; }
+function firmaTrab(id) { const v = firmasLoad()[id + '|' + S.period]; return typeof v === 'string' && /^data:image\/png;base64,[A-Za-z0-9+\/=]+$/.test(v) ? v : ''; }
 function firmaTrabSet(id, url) { const f = firmasLoad(), k = id + '|' + S.period; if (url) f[k] = url; else delete f[k]; try { localStorage.setItem(FKEY, JSON.stringify(f)); } catch (e) {} }
 function openFirmaPad(id) {
   const w = findW(id); if (!w) return;
