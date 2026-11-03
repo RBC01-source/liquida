@@ -1241,7 +1241,7 @@ function sbDrop() {
   const uid = S.sb.sess && S.sb.sess.uid;
   S.sb.sess = null; S.sub = null; S.subPrem = false; S.sb.subErr = false; S.sb.confirmLoad = false; S.sb.confirmWipe = false;
   const o = sbStored();
-  if (!o || !uid || o.uid === uid) sbSave();   // si otra pestaña guardó la sesión de otra cuenta, no se borra
+  if (uid && (!o || o.uid === uid)) sbSave();   // si otra pestaña guardó la sesión de otra cuenta, no se borra
   finishPrem();
 }
 async function sbToken() {
@@ -1250,8 +1250,10 @@ async function sbToken() {
   // otra pestaña pudo renovar ya el acceso (el refresh token se rota): se adopta su sesión en vez de gastar el token viejo
   const otra = sbStored();
   if (otra && otra.uid === ss.uid && otra.refresh_token !== ss.refresh_token && otra.exp - 60 > Math.floor(Date.now() / 1000)) { S.sb.sess = otra; return otra.access_token; }
-  try { const n = sbSession(await sbRefresh(SBC, fetch, ss.refresh_token), Date.now()); if (!n) throw new Error('x'); S.sb.sess = n; sbSave(); return n.access_token; }
+  const igual = function () { return !!S.sb.sess && S.sb.sess.uid === ss.uid; };   // la cuenta pudo cambiar mientras se esperaba la respuesta
+  try { const n = sbSession(await sbRefresh(SBC, fetch, ss.refresh_token), Date.now()); if (!n) throw new Error('x'); if (!igual()) return null; S.sb.sess = n; sbSave(); return n.access_token; }
   catch (e) {
+    if (!igual()) return null;
     if (e.status === 400 || e.status === 401 || e.status === 403) {
       const o2 = sbStored();                       // si otra pestaña guardó una sesión distinta y válida, no se borra
       if (o2 && o2.uid === ss.uid && o2.refresh_token !== ss.refresh_token) { S.sb.sess = o2; return o2.exp - 60 > Math.floor(Date.now() / 1000) ? o2.access_token : null; }
