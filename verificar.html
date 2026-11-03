@@ -242,7 +242,7 @@ async function run(txt){
   var r=await firmaVerify(txt);
   if(r.ok){
     var d=r.d, p=String(d.p).split('-'), f=new Date(d.t*1000);
-    out.innerHTML='<div class="res good"><h2>Boleta auténtica: los datos no fueron modificados</h2>'+
+    out.innerHTML='<div class="res good"><h2>La firma coincide: los datos no fueron modificados</h2>'+
       '<div class="kv"><span>Periodo</span><b>'+esc(MES[Number(p[1])-1]+' '+p[0])+'</b></div>'+
       '<div class="kv"><span>RUC del empleador</span><b>'+esc(d.r||'—')+'</b></div>'+
       '<div class="kv"><span>DNI del trabajador</span><b>'+esc(d.d||'—')+'</b></div>'+

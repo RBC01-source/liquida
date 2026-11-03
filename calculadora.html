@@ -67,7 +67,8 @@ svg{display:block}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .fld{display:grid;gap:5px;min-width:0}
 .fld label,.fld .l{font-size:.82rem;font-weight:700;color:var(--muted)}
-.fld input[type=text],.fld input[type=number],.fld input[type=date],.fld input[type=month],.fld select{width:100%;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:0 12px;font-weight:600}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.fld input[type=text],.fld input[type=number],.fld input[type=date],.fld input[type=month],.fld input[type=email],.fld input[type=password],.fld select{width:100%;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:0 12px;font-weight:600}
 .fld input.num{font-family:var(--f-mono)}
 .fld textarea{width:100%;min-height:84px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:10px 12px;font-family:var(--f-mono);font-size:.78rem;word-break:break-all;resize:vertical}
 a.btn{text-decoration:none}
@@ -226,7 +227,7 @@ details.adv[open] summary{margin-bottom:10px}
 @media (max-width:420px){.tiles{grid-template-columns:1fr}.hero h1{font-size:1.75rem}}
 </style></head><body>
 
-<div class="wrap" id="app"></div>
+<main class="wrap" id="app"></main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="sheet-wrap" id="sheet" hidden></div>
 
@@ -258,6 +259,7 @@ function span(a, b) {
   let m = (ey - A.y) * 12 + (em - A.m), d = ed - A.d;
   if (d < 0) { m--; d += new Date(Date.UTC(ey, em - 1, 0)).getUTCDate(); }
   if (d >= 30) { m++; d -= 30; }
+  if (d < 0) d = 0;                       // inicio día 30/31 y fin en febrero: el mes se completa sin días negativos
   if (m < 0) return { m: 0, d: 0 };
   return { m: m, d: d };
 }
@@ -272,7 +274,8 @@ function cts(o) {
   const f = REG[o.reg], c = computable(o);
   const gl = (o.gratiLast === '' || o.gratiLast == null) ? c * f.g : Number(o.gratiLast);
   const sexto = gl / 6, base = c + sexto;
-  const total = base * f.c * ((o.meses || 0) / 12 + (o.dias || 0) / 360);
+  const mm = Math.min(6, Math.max(0, o.meses || 0)), dd = mm >= 6 ? 0 : Math.min(29, Math.max(0, o.dias || 0));
+  const total = base * f.c * (mm / 12 + dd / 360);
   return { comp: c, sexto: r2(sexto), base: r2(base), total: r2(total) };
 }
 function vacTrunca(o) {
@@ -326,7 +329,7 @@ function bracketTax(neta) {
   return tax;
 }
 function honorarios(monto, susp) {
-  const ret = (!susp && monto > 3000) ? r2(monto * 0.08) : 0;
+  const ret = (!susp && monto > 1500) ? r2(monto * 0.08) : 0;
   const annual = monto * 12;
   const neta = Math.max(0, annual - Math.min(annual * 0.2, 24 * UIT) - 7 * UIT);
   const tax = r2(bracketTax(neta));
@@ -714,7 +717,14 @@ async function sbTraer(cfg, f, token) {
   const rows = await sbCall(cfg, f, 'GET', '/rest/v1/datos?select=estado,updated_at&limit=1', undefined, token);
   return Array.isArray(rows) && rows[0] && rows[0].estado && typeof rows[0].estado === 'object' ? rows[0] : null;
 }
-function sbEstadoValido(e) { return !!e && typeof e === 'object' && Array.isArray(e.workers) && e.workers.length <= 500 && e.nov && typeof e.nov === 'object' && e.empresa && typeof e.empresa === 'object'; }
+function cleanW(w) {
+  if (!w || typeof w !== 'object' || typeof w.id !== 'string' || !/^[A-Za-z0-9_-]{1,40}$/.test(w.id)) return null;
+  const t = function (x, n) { return String(x == null ? '' : x).slice(0, n || 80); };
+  return { id: w.id, name: t(w.name), dni: t(w.dni, 20), sueldo: Math.max(0, Number(w.sueldo) || 0), asig: !!w.asig,
+    reg: REG[w.reg] ? w.reg : 'general', pension: t(w.pension, 10), afp: t(w.afp, 20), comision: t(w.comision, 10), eps: !!w.eps };
+}
+function cleanWs(a) { return (Array.isArray(a) ? a : []).slice(0, 500).map(cleanW).filter(Boolean); }
+function sbEstadoValido(e) { return !!e && typeof e === 'object' && Array.isArray(e.workers) && e.workers.length <= 500 && cleanWs(e.workers).length === e.workers.length && e.nov && typeof e.nov === 'object' && e.empresa && typeof e.empresa === 'object'; }
 /*ENDPURE*/
 
 /* ------------------------------ UI ------------------------------ */
@@ -732,7 +742,7 @@ function licOn() { return !!LIC.pub; }          // con clave pública configurad
 let S = {
   plan: 'anual', premium: false, tab: 'calc', calc: 'grati', workers: [],
   licCode: '', lic: null, licInfo: null, licMsg: '', licDraft: '', subPrem: false, sub: null,
-  sb: { sess: null, mode: 'login', msg: '', ok: false, busy: false, confirmLoad: false },
+  sb: { sess: null, mode: 'login', msg: '', ok: false, busy: false, confirmLoad: false, open: false, subErr: false, pending: null, confirmWipe: false },
   period: iso(today).slice(0, 7), nov: {}, empresa: { name: '', ruc: '' },
   f: { sueldo: 2500, asig: false, varProm: 0, reg: 'general', eps: false, meses: 6, dias: 0, gratiLast: '',
        modo: 'trunca', diasGoce: 15, ingreso: iso(ago), cese: iso(today), vencidos: 0, despido: false, monto: 5000, susp: false, pension: 'afp', afpPct: 12.5 }
@@ -742,7 +752,7 @@ try {
   if (j) {
     S.premium = !licOn() && !!j.premium;        // el «premium» guardado por la demo no vale cuando hay cobro
     S.licCode = typeof j.lic === 'string' ? j.lic : '';
-    S.workers = Array.isArray(j.workers) ? j.workers : []; S.calc = j.calc || S.calc; Object.assign(S.f, j.f || {});
+    S.workers = cleanWs(j.workers); S.calc = j.calc || S.calc; Object.assign(S.f, j.f || {});
     if (j.nov && typeof j.nov === 'object') S.nov = j.nov;
     if (j.empresa && typeof j.empresa === 'object') S.empresa = { name: String(j.empresa.name || ''), ruc: String(j.empresa.ruc || '') };
   }
@@ -890,7 +900,7 @@ function formHTML() {
   }
   if (S.calc === 'cts') {
     return commonFields() + '<div class="grid2"><div class="fld"><label for="f-meses">Meses completos</label><select id="f-meses" data-k="meses">' + monthsSel('meses', 6) + '</select></div>' +
-      '<div class="fld"><label for="f-dias">Días adicionales</label><select id="f-dias" data-k="dias">' + monthsSel('dias', 29) + '</select></div></div>' +
+      '<div class="fld"><label for="f-dias">Días adicionales</label><select id="f-dias" data-k="dias">' + monthsSel('dias', Number(S.f.meses) >= 6 ? 0 : 29) + '</select></div></div>' +
       fld('Última gratificación (S/, opcional)', 'gratiLast', 'number', 'Vacío = se calcula con el sueldo');
   }
   if (S.calc === 'vac') {
@@ -968,7 +978,7 @@ function compute() {
   }
   const h = honorarios(Number(f.monto) || 0, !!f.susp);
   const notes = [];
-  if ((Number(f.monto) || 0) <= 3000) notes.push('Hasta S/ 3,000 mensuales no corresponde retención de 4.ª categoría.');
+  if ((Number(f.monto) || 0) <= 1500) notes.push('Hasta S/ 1,500 por recibo no corresponde retención de 4.ª categoría.');
   notes.push('El impuesto anual es una estimación solo con renta de 4.ª categoría (deduce 20% y 7 UIT; UIT ' + fmt(UIT) + ').');
   return { band: { l: 'Neto mensual tras retención', v: h.neto, s: h.ret ? 'Retención del 8%: ' + fmt(h.ret) : 'Sin retención' },
     rows: [['Honorario mensual', Number(f.monto) || 0], ['Retención (8%)', -h.ret], ['Renta neta anual imponible', h.neta], ['Impuesto anual estimado', h.tax], ['Equivale a, por mes', h.mensual]], total: ['Neto mensual', h.neto],
@@ -1025,8 +1035,8 @@ function planillaView() {
   pm.rows.forEach(function (r) {
     const flag = Object.keys(nvOf(r.w.id)).some(function (k) { return nvOf(r.w.id)[k] !== '' && Number(nvOf(r.w.id)[k]) !== 0 && k !== 'mesesSem'; });
     h += '<div class="wrow"><div><b>' + esc(r.w.name) + '</b><small>' + sistLabel(r.w) + ' · ' + r.b.dias + ' días' + (flag ? ' · con novedades' : '') + '</small><small>Neto <b class="num" style="display:inline">' + fmt(r.b.neto) + '</b></small></div>' +
-      '<div class="acts"><button type="button" class="btn sm ghost" data-act="nov" data-id="' + r.w.id + '">Novedades</button>' +
-      '<button type="button" class="btn sm ghost" data-act="boleta" data-id="' + r.w.id + '">' + (S.premium ? '' : ICON.lock + ' ') + 'Boleta</button></div></div>';
+      '<div class="acts"><button type="button" class="btn sm ghost" data-act="nov" data-id="' + esc(r.w.id) + '">Novedades</button>' +
+      '<button type="button" class="btn sm ghost" data-act="boleta" data-id="' + esc(r.w.id) + '">' + (S.premium ? '' : ICON.lock + ' ') + 'Boleta</button></div></div>';
   });
   h += '</div>';
   if (pm.excl.length) h += '<div class="note">' + ICON.info + '<span>' + pm.excl.length + ' trabajador(es) en REMYPE no se incluyen: esta planilla aplica al régimen general.</span></div>';
@@ -1056,7 +1066,7 @@ function teamView() {
   S.workers.forEach(function (w) {
     const st = teamStats(w); tg += st.g; tc += st.c;
     h += '<div class="wrow"><div><b>' + esc(w.name) + '</b><small>' + fmt(w.sueldo) + ' · ' + REG[w.reg].n + (w.reg === 'general' ? ' · ' + sistLabel(w) : '') + '</small><small>Grati. semestre ' + fmt(st.g) + ' · CTS semestre ' + fmt(st.c) + '</small></div>' +
-      '<div class="acts"><button type="button" class="btn sm ghost" data-act="use" data-id="' + w.id + '">Usar</button><button type="button" class="btn sm ghost" data-act="editw" data-id="' + w.id + '">Editar</button><button type="button" class="ib" aria-label="Quitar a ' + esc(w.name) + '" data-act="del" data-id="' + w.id + '">' + ICON.close + '</button></div></div>';
+      '<div class="acts"><button type="button" class="btn sm ghost" data-act="use" data-id="' + esc(w.id) + '">Usar</button><button type="button" class="btn sm ghost" data-act="editw" data-id="' + esc(w.id) + '">Editar</button><button type="button" class="ib" aria-label="Quitar a ' + esc(w.name) + '" data-act="del" data-id="' + esc(w.id) + '">' + ICON.close + '</button></div></div>';
   });
   h += '</div><button type="button" class="btn block" data-act="addw">Agregar trabajador</button>' +
     '<p class="fine center">' + (S.premium ? 'Premium: trabajadores ilimitados' : 'Gratis: ' + S.workers.length + ' de 3 trabajadores') + '</p>' +
@@ -1097,7 +1107,7 @@ function accGuide() {
 function guideView() {
   const rows = [['Remuneración Mínima Vital', 'S/ 1,230 (desde el 1 de oct. 2026)'], ['Asignación familiar (10% RMV)', 'S/ ' + ASIG.toFixed(2)], ['UIT 2026', fmt(UIT)],
     ['Gratificaciones', 'Jul. y dic. · 1 sueldo + 9% (EsSalud) o 6.75% (EPS)'], ['CTS', 'Depósito hasta 15 may. y 15 nov. · 1/12 por mes'], ['Vacaciones', '30 días (general) · 15 días (REMYPE)'],
-    ['Retención 4.ª categoría', '8% si el honorario supera S/ 3,000 al mes'], ['Pensión', 'ONP 13% · AFP ≈ 12–13% (varía)'], ['Renta 5.ª categoría', 'Se deducen 7 UIT; tramos 8%, 14%, 17%, 20%, 30%'], ['Despido arbitrario', '1.5 sueldos por año, tope 12 (general)'],
+    ['Retención 4.ª categoría', '8% si el recibo por honorarios supera S/ 1,500'], ['Pensión', 'ONP 13% · AFP ≈ 12–13% (varía)'], ['Renta 5.ª categoría', 'Se deducen 7 UIT; tramos 8%, 14%, 17%, 20%, 30%'], ['Despido arbitrario', '1.5 sueldos por año, tope 12 (general)'],
     ['Planilla: AFP', 'Aporte 10% + prima 1.37% + comisión según AFP · tope referencial S/ ' + AFP_TOPE.toLocaleString('en-US') + ' (SBS, abr.–jun. 2026)'],
     ['Planilla: EsSalud', '9% a cargo del empleador; no aplica a la gratificación'],
     ['Planilla: horas extras', '25% las 2 primeras horas · 35% desde la 3.ª · valor hora = remuneración ÷ 30 ÷ 8'],
@@ -1115,18 +1125,33 @@ function guideView() {
   return h;
 }
 function render() {
+  if (S.sub) syncSubPrem();
+  let fk = null;
+  try { const ae = document.activeElement; if (ae && ae.getAttribute && ae.getAttribute('role') === 'tab') fk = (ae.dataset.act || '') + '|' + (ae.dataset.v || ae.dataset.k || ''); } catch (e) {}
   const t = S.tab;
-  let h = '<header class="top"><div class="brand"><svg class="logo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9"/><path d="M9 24V10M9 10h7a4 4 0 010 8H9M17 18l7 6"/></svg><div>Liquida<small>Beneficios laborales Perú</small></div></div>' +
+  let h = '<h1 class="sr">Liquida: calculadora de beneficios laborales en Perú</h1><header class="top"><div class="brand"><svg class="logo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9"/><path d="M9 24V10M9 10h7a4 4 0 010 8H9M17 18l7 6"/></svg><div>Liquida<small>Beneficios laborales Perú</small></div></div>' +
     '<div class="chips">' + (sbOn() ? '<button type="button" class="pchip" data-act="cuenta" aria-label="Mi cuenta">' + (S.sb.sess ? '<b>Mi cuenta</b>' : 'Entrar') + '</button>' : '') + '<button type="button" class="pchip" data-act="prem" aria-label="Plan">' + (S.premium ? '<b>Premium</b>' : 'Plan <b>Gratis</b>') + '</button></div></header>' +
     '<nav class="nav" role="tablist">' + [['calc', 'Calcular'], ['team', 'Equipo'], ['plan', 'Planilla'], ['guide', 'Beneficios']].map(function (x) {
       return '<button type="button" role="tab" data-act="tab" data-v="' + x[0] + '" aria-selected="' + (t === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</nav>';
   h += t === 'calc' ? calcView() : t === 'team' ? teamView() : t === 'plan' ? planillaView() : guideView();
   h += '<footer class="disc"><span><a href="beneficios-sociales-peru.html">Beneficios</a> · <a href="precios.html">Precios</a> · <a href="index.html">Inicio</a></span><span>Cálculos referenciales, no constituyen asesoría legal ni financiera.</span></footer>';
   app.innerHTML = h;
+  if (fk) { try { [].slice.call(app.querySelectorAll('[role="tab"]')).some(function (el) { if ((el.dataset.act || '') + '|' + (el.dataset.v || el.dataset.k || '') === fk) { el.focus(); return true; } return false; }); } catch (e) {} }
 }
 
-function openSheet(html) { sheet.innerHTML = '<div class="sheet" role="dialog" aria-modal="true">' + html + '</div>'; sheet.hidden = false; }
-function closeSheet() { sheet.hidden = true; sheet.innerHTML = ''; }
+let lastFocus = null;
+function openSheet(html) {
+  try { if (sheet.hidden) lastFocus = document.activeElement; } catch (e) {}
+  sheet.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-title" tabindex="-1">' + html + '</div>';
+  sheet.hidden = false;
+  try {
+    const h2 = sheet.querySelector('h2'); if (h2) h2.id = 'sh-title';
+    document.body.style.overflow = 'hidden';
+    const first = sheet.querySelector('input,select,textarea,button,a[href]');
+    (first || sheet.querySelector('.sheet')).focus();
+  } catch (e) {}
+}
+function closeSheet() { sheet.hidden = true; sheet.innerHTML = ''; S.sb.open = false; S.sb.confirmWipe = false; try { document.body.style.overflow = ''; if (lastFocus && lastFocus.focus && document.contains(lastFocus)) lastFocus.focus(); } catch (e) {} lastFocus = null; }
 function dmy(s) { const p = String(s).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(s); }
 function licMessage(r) {
   if (r.reason === 'expired') return 'Este código venció el ' + dmy(r.exp) + '. Pide uno nuevo para seguir con Premium.';
@@ -1146,7 +1171,7 @@ function yapeFmt(n) { const m = /^51(\d{3})(\d{3})(\d{3})$/.exec(n); return m ? 
 function finishPrem() { if (licOn()) S.premium = !!S.lic || !!S.subPrem; }
 function calcUrl() { try { return location.href.replace(/[?#].*$/, ''); } catch (e) { return ''; } }
 function sbSave() { try { if (S.sb.sess) localStorage.setItem(SBKEY, JSON.stringify(S.sb.sess)); else localStorage.removeItem(SBKEY); } catch (e) {} }
-function sbDrop() { S.sb.sess = null; S.sub = null; S.subPrem = false; sbSave(); finishPrem(); }
+function sbDrop() { S.sb.sess = null; S.sub = null; S.subPrem = false; S.sb.subErr = false; S.sb.confirmLoad = false; S.sb.confirmWipe = false; sbSave(); finishPrem(); }
 async function sbToken() {
   const ss = S.sb.sess; if (!ss) return null;
   if (ss.exp - 60 > Math.floor(Date.now() / 1000)) return ss.access_token;
@@ -1154,21 +1179,30 @@ async function sbToken() {
   catch (e) { if (e.status === 400 || e.status === 401 || e.status === 403) sbDrop(); return null; }
 }
 // La suscripción se confirma con el servidor en cada carga; sin internet no se concede Premium por cuenta.
+function syncSubPrem() { S.subPrem = !!S.sub && sbSubActiva(S.sub, iso(new Date())); finishPrem(); }
 async function sbRefreshSub() {
-  const tok = await sbToken(); if (!tok || !S.sb.sess) return;
-  try { S.sub = await sbSuscripcion(SBC, fetch, tok, S.sb.sess.email); S.subPrem = sbSubActiva(S.sub, iso(new Date())); }
-  catch (e) { if (e.status === 401 || e.status === 403) sbDrop(); }
-  finishPrem();
+  const ses0 = S.sb.sess; if (!ses0) return;
+  const uid = ses0.uid, mismo = function () { return !!S.sb.sess && S.sb.sess.uid === uid; };
+  const tok = await sbToken(); if (!tok || !mismo()) return;
+  try {
+    const sub = await sbSuscripcion(SBC, fetch, tok, S.sb.sess.email);
+    if (!mismo()) return;                 // la sesión cambió mientras esperábamos: se descarta la respuesta
+    S.sub = sub; S.sb.subErr = false;
+  } catch (e) {
+    if (!mismo()) return;
+    if (e.status === 401 || e.status === 403) sbDrop(); else { S.sub = null; S.sb.subErr = true; }
+  }
+  syncSubPrem();
 }
 function mailOk(v) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(v || '').trim()); }
 function openCuenta() {
-  const B = S.sb;
+  const B = S.sb; B.open = true;
   let h = '<div class="sh-top"><h2>Mi cuenta</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>';
   const msg = B.msg ? '<div class="note" role="alert">' + ICON.info + '<span>' + esc(B.msg) + '</span></div>' : '';
   if (!B.sess) {
     const reg = B.mode === 'signup';
     h += '<div class="rg" role="group" aria-label="Modo"><button type="button" data-act="sb-mode" data-v="login" aria-pressed="' + !reg + '">Entrar</button><button type="button" data-act="sb-mode" data-v="signup" aria-pressed="' + reg + '">Crear cuenta</button></div>' +
-      '<div class="fld"><label for="sb-email">Correo</label><input id="sb-email" type="email" autocomplete="email" inputmode="email" maxlength="120"></div>' +
+      '<div class="fld"><label for="sb-email">Correo</label><input id="sb-email" type="email" autocomplete="email" inputmode="email" maxlength="120" value="' + esc(B.email || '') + '"></div>' +
       '<div class="fld"><label for="sb-pass">Contraseña' + (reg ? ' (mínimo 8 caracteres)' : '') + '</label><input id="sb-pass" type="password" autocomplete="' + (reg ? 'new-password' : 'current-password') + '" maxlength="72"></div>' +
       '<button type="button" class="btn block" data-act="' + (reg ? 'sb-signup' : 'sb-login') + '"' + (B.busy ? ' disabled' : '') + '>' + (B.busy ? 'Un momento…' : reg ? 'Crear mi cuenta' : 'Entrar') + '</button>' +
       (reg ? '' : '<button type="button" class="btn ghost block" data-act="sb-reset">Olvidé mi contraseña</button>') + msg +
@@ -1177,16 +1211,19 @@ function openCuenta() {
     const sb = S.sub;
     const wa = LIC.whatsapp && /^\d{8,15}$/.test(LIC.whatsapp) ? ' <a href="https://wa.me/' + LIC.whatsapp + '?text=' + encodeURIComponent('Hola, ya pagué Liquida Premium. Mi correo es ' + B.sess.email) + '" target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a>' : '';
     h += '<div class="note">' + ICON.check + '<span>Sesión iniciada como <b>' + esc(B.sess.email) + '</b>.</span></div>' +
-      '<div class="note">' + ICON.info + '<span>' + (S.subPrem ? 'Suscripción activa: plan <b>' + esc(sb.plan) + '</b>, hasta el <b>' + dmy(sb.vence) + '</b>.' : sb ? 'Tu suscripción venció el <b>' + dmy(sb.vence) + '</b>. Renuévala para seguir con Premium.' + wa : 'No hay una suscripción asociada a este correo. Si ya pagaste, avísanos con este correo.' + wa) + '</span></div>' +
+      '<div class="note">' + ICON.info + '<span>' + (B.subErr ? 'No pudimos consultar tu suscripción. Revisa tu conexión y toca «Revisar de nuevo».' : S.subPrem ? 'Suscripción activa: plan <b>' + esc(sb.plan) + '</b>, hasta el <b>' + dmy(sb.vence) + '</b>.' : sb ? 'Tu suscripción venció el <b>' + dmy(sb.vence) + '</b>. Renuévala para seguir con Premium.' + wa : 'No hay una suscripción asociada a este correo. Si ya pagaste, avísanos con este correo.' + wa) + '</span></div>' +
       '<h3 class="gt">Mis datos en la nube</h3><p class="fine">Guarda una copia de tus trabajadores, novedades y datos del empleador en tu cuenta. Solo tú puedes verla. No se guardan las firmas de boletas ni las llaves.</p>' +
       '<div class="acts-col"><button type="button" class="btn block" data-act="sb-save"' + (B.busy ? ' disabled' : '') + '>Guardar mis datos en la nube</button>' +
       (B.confirmLoad ? '<div class="note">' + ICON.info + '<span>Esto reemplaza los trabajadores y novedades de este navegador por los de la nube.</span></div><button type="button" class="btn block" data-act="sb-load-ok">Sí, reemplazar con los datos de la nube</button><button type="button" class="btn ghost block" data-act="sb-load-no">Cancelar</button>'
         : '<button type="button" class="btn ghost block" data-act="sb-load"' + (B.busy ? ' disabled' : '') + '>Traer mis datos de la nube</button>') + '</div>' + msg +
-      '<button type="button" class="btn ghost block" data-act="sb-out">Cerrar sesión</button>';
+      (B.subErr ? '<button type="button" class="btn ghost block" data-act="sb-recheck">Revisar de nuevo</button>' : '') +
+      '<button type="button" class="btn ghost block" data-act="sb-out">Cerrar sesión</button>' +
+      (B.confirmWipe ? '<div class="note">' + ICON.info + '<span>Se borran de este equipo los trabajadores, novedades, firmas y códigos guardados. Tu cuenta y la copia en la nube no se tocan.</span></div><button type="button" class="btn block" data-act="sb-wipe-ok">Sí, cerrar sesión y borrar</button><button type="button" class="btn ghost block" data-act="sb-wipe-no">Cancelar</button>' : '<button type="button" class="btn ghost block" data-act="sb-wipe">Cerrar sesión y borrar datos de este equipo</button>');
   }
   openSheet(h);
 }
 function openNuevaClave() {
+  S.sb.open = false;
   openSheet('<div class="sh-top"><h2>Nueva contraseña</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>' +
     '<div class="fld"><label for="sb-new">Escribe tu nueva contraseña (mínimo 8 caracteres)</label><input id="sb-new" type="password" autocomplete="new-password" maxlength="72"></div>' +
     '<button type="button" class="btn block" data-act="sb-newpass">Guardar contraseña</button>' + (S.sb.msg ? '<div class="note" role="alert">' + ICON.info + '<span>' + esc(S.sb.msg) + '</span></div>' : ''));
@@ -1197,7 +1234,7 @@ async function sbAct(a) {
   if (B.busy) return;
   try {
     if (a === 'sb-login' || a === 'sb-signup') {
-      const email = val('sb-email').trim(), pass = val('sb-pass');
+      const email = val('sb-email').trim(), pass = val('sb-pass'); B.email = email;
       if (!mailOk(email)) { B.msg = 'Escribe un correo válido.'; B.ok = false; return openCuenta(); }
       if (pass.length < 8) { B.msg = 'La contraseña debe tener al menos 8 caracteres.'; B.ok = false; return openCuenta(); }
       B.busy = true; B.msg = ''; openCuenta();
@@ -1212,7 +1249,7 @@ async function sbAct(a) {
         B.sess = sess; sbSave(); B.msg = ''; await sbRefreshSub(); toast('Sesión iniciada');
       }
     } else if (a === 'sb-reset') {
-      const email = val('sb-email').trim();
+      const email = val('sb-email').trim(); B.email = email;
       if (!mailOk(email)) { B.msg = 'Escribe tu correo arriba y vuelve a tocar «Olvidé mi contraseña».'; return openCuenta(); }
       B.busy = true; await sbRecover(SBC, fetch, email, calcUrl()); B.msg = 'Si ese correo tiene cuenta, te enviamos un enlace para crear una contraseña nueva.'; B.ok = true;
     } else if (a === 'sb-save') {
@@ -1223,7 +1260,7 @@ async function sbAct(a) {
       B.busy = true; const r = await sbTraer(SBC, fetch, tok); B.confirmLoad = false;
       if (!r) B.msg = 'Todavía no hay datos guardados en tu cuenta.';
       else if (!sbEstadoValido(r.estado)) B.msg = 'Los datos de la nube no tienen el formato esperado.';
-      else { S.workers = r.estado.workers; S.nov = r.estado.nov; S.empresa = { name: String(r.estado.empresa.name || ''), ruc: String(r.estado.empresa.ruc || '') }; save(); render(); B.msg = 'Listo: se cargaron tus datos de la nube.'; B.ok = true; }
+      else { S.workers = cleanWs(r.estado.workers); S.nov = r.estado.nov; S.empresa = { name: String(r.estado.empresa.name || ''), ruc: String(r.estado.empresa.ruc || '') }; save(); render(); B.msg = 'Listo: se cargaron tus datos de la nube.'; B.ok = true; }
     } else if (a === 'sb-newpass') {
       const np = val('sb-new');
       if (np.length < 8) { B.msg = 'La contraseña debe tener al menos 8 caracteres.'; return openNuevaClave(); }
@@ -1231,7 +1268,9 @@ async function sbAct(a) {
       B.busy = true; await sbUpdatePass(SBC, fetch, tok, np); B.busy = false; B.recovery = false; B.msg = ''; toast('Contraseña actualizada'); return openCuenta();
     }
   } catch (e) { B.msg = sbMsg(e); B.ok = false; if (e && (e.status === 401 || e.status === 403) && B.sess) { B.msg = 'Tu sesión venció. Entra de nuevo.'; sbDrop(); } }
-  B.busy = false; openCuenta(); render();
+  B.busy = false;
+  if (a === 'sb-newpass' && B.msg && !sheet.hidden) openNuevaClave(); else if (B.open && !sheet.hidden) openCuenta();
+  render();
 }
 function openPremium() {
   const head = '<div class="sh-top"><h2>Liquida Premium</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>';
@@ -1405,7 +1444,7 @@ app.addEventListener('input', function (e) {
   if (t.type === 'checkbox') {
     if (k === 'despido' && t.checked && !S.premium) { t.checked = false; openPremium(); return; }
     S.f[k] = t.checked;
-  } else if (t.type === 'number') S.f[k] = t.value === '' ? '' : Number(t.value);
+  } else if (t.type === 'number') S.f[k] = t.value === '' ? '' : Math.max(0, Number(t.value) || 0);
   else S.f[k] = t.value;
   if (k === 'gratiLast' && t.value === '') S.f[k] = '';
   save(); setRes();
@@ -1471,6 +1510,18 @@ function onClick(e) {
   else if (a === 'prem') openPremium();
   else if (a === 'cuenta') { if (sbOn()) { S.sb.msg = ''; S.sb.confirmLoad = false; openCuenta(); } }
   else if (a === 'sb-mode') { S.sb.mode = v === 'signup' ? 'signup' : 'login'; S.sb.msg = ''; openCuenta(); }
+  else if (a === 'sb-recheck') { S.sb.subErr = false; sbRefreshSub().then(function () { if (S.sb.open) openCuenta(); render(); }); }
+  else if (a === 'sb-wipe') { S.sb.confirmWipe = true; openCuenta(); }
+  else if (a === 'sb-wipe-no') { S.sb.confirmWipe = false; openCuenta(); }
+  else if (a === 'sb-wipe-ok') {
+    const tk = S.sb.sess && S.sb.sess.access_token; if (tk) sbSignOut(SBC, fetch, tk);
+    sbDrop();
+    try { localStorage.removeItem(KEY); localStorage.removeItem(SKEY); localStorage.removeItem(FKEY); } catch (e) {}
+    S.workers = []; S.nov = {}; S.empresa = { name: '', ruc: '' }; S.licCode = ''; S.lic = null; S.licInfo = null; finishPrem();
+    closeSheet(); render(); toast('Sesión cerrada y datos borrados de este equipo');
+  }
+  else if (a === 'sb-adopt') { sbAdopt(); }
+  else if (a === 'sb-adopt-no') { S.sb.pending = null; closeSheet(); }
   else if (a === 'sb-out') { const tk = S.sb.sess && S.sb.sess.access_token; if (tk) sbSignOut(SBC, fetch, tk); sbDrop(); S.sb.msg = ''; closeSheet(); render(); toast('Sesión cerrada'); }
   else if (a === 'sb-load') { S.sb.confirmLoad = true; S.sb.msg = ''; openCuenta(); }
   else if (a === 'sb-load-no') { S.sb.confirmLoad = false; openCuenta(); }
@@ -1498,7 +1549,7 @@ function onClick(e) {
   else if (a === 'savew') {
     const name = document.getElementById('n-name').value.trim();
     if (!name) { toast('Escribe un nombre'); return; }
-    const data = { name: name, dni: document.getElementById('n-dni').value.trim(), sueldo: Number(document.getElementById('n-sueldo').value) || 0,
+    const data = { name: name, dni: document.getElementById('n-dni').value.trim(), sueldo: Math.max(0, Number(document.getElementById('n-sueldo').value) || 0),
       asig: document.getElementById('n-asig').checked, reg: document.getElementById('n-reg').value,
       pension: document.getElementById('n-pension').value, afp: document.getElementById('n-afp').value, comision: document.getElementById('n-com').value,
       eps: document.getElementById('n-eps').checked };
@@ -1506,7 +1557,11 @@ function onClick(e) {
     if (cur) Object.assign(cur, data); else S.workers.push(Object.assign({ id: 'w' + Date.now().toString(36) }, data));
     save(); closeSheet(); render();
   }
-  else if (a === 'del') { S.workers = S.workers.filter(function (w) { return w.id !== b.dataset.id; }); Object.keys(S.nov).forEach(function (p) { delete S.nov[p][b.dataset.id]; }); save(); render(); }
+  else if (a === 'del') {
+    const w = findW(b.dataset.id); if (!w) return;
+    openSheet('<div class="sh-top"><h2>¿Eliminar a ' + esc(w.name) + '?</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div><p class="sub">Se borran también sus novedades. No se puede deshacer.</p><button type="button" class="btn block" data-act="del-ok" data-id="' + esc(w.id) + '">Sí, eliminar</button><button type="button" class="btn ghost block" data-act="close">Cancelar</button>');
+  }
+  else if (a === 'del-ok') { closeSheet(); S.workers = S.workers.filter(function (w) { return w.id !== b.dataset.id; }); Object.keys(S.nov).forEach(function (p) { delete S.nov[p][b.dataset.id]; }); save(); render(); }
   else if (a === 'use') {
     const w = S.workers.filter(function (x) { return x.id === b.dataset.id; })[0];
     if (w) { S.f.sueldo = w.sueldo; S.f.asig = w.asig; S.f.reg = w.reg; S.tab = 'calc'; save(); render(); window.scrollTo(0, 0); }
@@ -1517,14 +1572,36 @@ sheet.addEventListener('click', function (e) { if (e.target === sheet) closeShee
 sheet.addEventListener('change', function (e) {
   if (e.target.id === 'n-pension') { const bx = document.getElementById('n-afpbox'); if (bx) bx.hidden = e.target.value !== 'afp'; }
 });
-document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && !sheet.hidden) { closeSheet(); return; }
+  if (e.key === 'Tab' && !sheet.hidden) {
+    try {
+      const f = [].slice.call(sheet.querySelectorAll('input,select,textarea,button,a[href]')).filter(function (x) { return !x.disabled; });
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (!sheet.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+      else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    } catch (x) {}
+  }
+});
+app.addEventListener('keydown', function (e) {
+  const t = e.target; if (!t || !t.getAttribute || t.getAttribute('role') !== 'tab') return;
+  const k = e.key; if (k !== 'ArrowRight' && k !== 'ArrowLeft' && k !== 'Home' && k !== 'End') return;
+  const lists = [].slice.call(app.querySelectorAll('[role="tablist"]')), li = lists.indexOf(t.parentNode);
+  const tabs = [].slice.call(t.parentNode.querySelectorAll('[role="tab"]')), i = tabs.indexOf(t);
+  const n = k === 'Home' ? 0 : k === 'End' ? tabs.length - 1 : (i + (k === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+  e.preventDefault(); tabs[n].click();
+  const nl = app.querySelectorAll('[role="tablist"]')[li];
+  if (nl) { const nt = nl.querySelectorAll('[role="tab"]')[n]; if (nt) nt.focus(); }
+});
 (function () {
   try {
     location.hash.replace(/^#/, '').split('&').forEach(function (kv) {
       const p = kv.split('='), k = p[0], v = decodeURIComponent(p[1] || '');
       if (k === 'calc' && CALCS.some(function (c) { return c.id === v; })) { S.calc = v; S.tab = 'calc'; }
       else if (k === 'tab' && ['calc', 'team', 'plan', 'guide'].indexOf(v) >= 0) S.tab = v;
-      else if (['sueldo', 'varProm', 'meses', 'dias', 'monto'].indexOf(k) >= 0 && v !== '' && !isNaN(v)) S.f[k] = Number(v);
+      else if (['sueldo', 'varProm', 'meses', 'dias', 'monto'].indexOf(k) >= 0 && v !== '' && !isNaN(v)) S.f[k] = Math.min(k === 'meses' ? 12 : k === 'dias' ? 29 : 1e7, Math.max(0, Number(v)));
       else if (k === 'reg' && REG[v]) S.f.reg = v;
     });
   } catch (e) {}
@@ -1539,27 +1616,38 @@ if (licOn() && S.licCode) {
     render();
   });
 }
-// Cuentas: restaura la sesión, procesa el enlace del correo (confirmación o nueva contraseña) y confirma la suscripción con el servidor.
+// Cuentas: restaura la sesión, detecta el enlace del correo (confirmación o nueva contraseña) y confirma la suscripción con el servidor.
+async function sbAdopt() {
+  const p = S.sb.pending; S.sb.pending = null; if (!p) return;
+  S.sb.sess = { access_token: p.access_token, refresh_token: p.refresh_token, exp: p.exp, uid: p.uid, email: p.email }; sbSave();
+  if (p.recovery) { openNuevaClave(); await sbRefreshSub(); render(); return; }
+  closeSheet(); await sbRefreshSub(); render(); toast('Sesión iniciada');
+}
 (async function sbBoot() {
   if (!sbOn()) return;
   try {
     const j = JSON.parse(localStorage.getItem(SBKEY) || 'null');
     if (j && j.access_token && j.refresh_token && j.uid && j.email) S.sb.sess = j;
   } catch (e) {}
+  let link = null;
   try {
     const o = {};
     String(location.hash || '').replace(/^#/, '').split('&').forEach(function (kv) { const q = kv.split('='); if (q[0]) o[q[0]] = decodeURIComponent(q[1] || ''); });
-    if (o.access_token && o.refresh_token) {
-      const u = await sbCall(SBC, fetch, 'GET', '/auth/v1/user', undefined, o.access_token);
-      S.sb.sess = { access_token: o.access_token, refresh_token: o.refresh_token, exp: Math.floor(Date.now() / 1000) + (Number(o.expires_in) || 3600), uid: u.id, email: String(u.email || '') };
-      sbSave();
-      if (o.type === 'recovery') S.sb.recovery = true;
-      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
-    }
+    if (o.access_token && o.refresh_token) link = o;
+    if (link) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }   // los tokens no se quedan en la barra ni en el historial
   } catch (e) {}
   if (S.sb.sess) await sbRefreshSub();
   render();
-  if (S.sb.recovery && S.sb.sess) openNuevaClave();
+  if (link) {
+    // Un enlace con tokens podría haber sido armado por otra persona: se muestra con qué cuenta se entraría y se pide confirmar.
+    try {
+      const u = await sbCall(SBC, fetch, 'GET', '/auth/v1/user', undefined, link.access_token);
+      S.sb.pending = { access_token: link.access_token, refresh_token: link.refresh_token, exp: Math.floor(Date.now() / 1000) + (Number(link.expires_in) || 3600), uid: u.id, email: String(u.email || ''), recovery: link.type === 'recovery' };
+      openSheet('<div class="sh-top"><h2>Enlace de acceso</h2><button type="button" class="ib" aria-label="Cerrar" data-act="sb-adopt-no">' + ICON.close + '</button></div>' +
+        '<div class="note">' + ICON.info + '<span>Este enlace entra a la cuenta <b>' + esc(S.sb.pending.email) + '</b>' + (S.sb.pending.recovery ? ' para cambiar su contraseña' : '') + '. Acepta solo si tú pediste este correo.</span></div>' +
+        '<button type="button" class="btn block" data-act="sb-adopt">Sí, entrar con esa cuenta</button><button type="button" class="btn ghost block" data-act="sb-adopt-no">No, cancelar</button>');
+    } catch (e) {}
+  }
 })();
 
 </script>
