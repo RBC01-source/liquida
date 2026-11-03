@@ -742,7 +742,7 @@ function cleanNov(n) {
     o[p] = {};
     Object.keys(n[p]).forEach(function (id) {
       const v = n[p][id]; if (!/^[A-Za-z0-9_-]{1,40}$/.test(id) || !v || typeof v !== 'object') return;
-      const c = {}; K.forEach(function (k) { if (v[k] !== undefined && v[k] !== '' && isFinite(Number(v[k]))) c[k] = Number(v[k]); });
+      const c = {}; K.forEach(function (k) { if (v[k] !== undefined && v[k] !== '' && isFinite(Number(v[k]))) c[k] = Math.min(k === 'faltas' ? 30 : k === 'mesesSem' ? 6 : 1e9, Math.max(0, Number(v[k]))); });
       o[p][id] = c;
     });
   });
@@ -782,7 +782,7 @@ function mergeF(g) {
   Object.keys(F0).forEach(function (k) {
     const d = F0[k], v = g[k]; if (v === undefined || v === null) return;
     if (typeof d === 'boolean') S.f[k] = !!v;
-    else if (k === 'ingreso' || k === 'cese') { if (/^\d{4}-\d{2}-\d{2}$/.test(String(v)) && !isNaN(Date.parse(v))) S.f[k] = String(v); }
+    else if (k === 'ingreso' || k === 'cese') { if (/^\d{4}-\d{2}-\d{2}$/.test(String(v)) && !isNaN(Date.parse(v)) && new Date(v + 'T00:00:00Z').toISOString().slice(0, 10) === String(v)) S.f[k] = String(v); }
     else if (k === 'reg') { if (typeof v === 'string' && hasO(REG, v)) S.f[k] = v; }
     else if (k === 'pension') { if (['afp', 'onp', 'none'].indexOf(v) >= 0) S.f[k] = v; }
     else if (k === 'modo') { if (v === 'trunca' || v === 'goce') S.f[k] = v; }
@@ -877,7 +877,7 @@ const ICON = {
   lock: '<svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>'
 };
 function siteMode() { return !!window.LIQUIDA_CFG; }
-function csvCell(v) { v = String(v); if (/^[=+\-@\t\r]/.test(v) && isNaN(Number(v))) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+function csvCell(v) { v = String(v); if (/^[=+\-@\t\r]/.test(v) && isNaN(Number(v))) v = "'" + v; return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
 function downloadCSV(name, rows) {
   const text = '\uFEFF' + rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n');
   try {
@@ -1576,7 +1576,7 @@ function onClick(e) {
     const id = b.dataset.id, g = function (k) { const el = document.getElementById('nv-' + k); return el ? el.value : ''; };
     const o = {};
     ['faltas', 'tardanza', 'he25', 'he35', 'bonos', 'otros', 'mesesSem', 'remPrev', 'retPrev'].forEach(function (k) {
-      const val = g(k); if (val !== '') o[k] = Number(val);
+      const val = g(k); if (val !== '' && isFinite(Number(val))) o[k] = Math.min(k === 'faltas' ? 30 : k === 'mesesSem' ? 6 : 1e9, Math.max(0, Number(val)));
     });
     if (o.faltas > 30) o.faltas = 30;
     if (!S.nov[S.period]) S.nov[S.period] = {};
