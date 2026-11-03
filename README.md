@@ -71,3 +71,7 @@ Alcances y límites:
 
 ## Pendiente: archivos PLAME y T-Registro
 Aún no se generan. Requieren las estructuras oficiales de SUNAT (T-Registro: archivos `RP_<RUC>.ide`, `.tra`, `.per`, `.est`, `.cta`, campos separados por «|»; PLAME: `.jor`, `.snl`, `.rem`, …) y sus tablas paramétricas de códigos, que deben validarse con el PVS de SUNAT antes de usarse.
+
+
+## Netlify, dominio propio y cuentas (Supabase)
+Guía completa, paso a paso: [`docs/PUESTA-EN-MARCHA.md`](docs/PUESTA-EN-MARCHA.md). Archivos: `netlify.toml`, `404.html`, `supabase/schema.sql` y `herramientas/configurar-sitio.mjs`.

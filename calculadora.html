@@ -54,6 +54,7 @@ svg{display:block}
 .logo rect{fill:var(--accent)} .logo path{stroke:var(--on-accent);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .pchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:.78rem;font-weight:600;color:var(--muted)}
 .pchip b{color:var(--ink)}
+.chips{display:flex;gap:8px;align-items:center}
 .nav{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--key);padding:4px;border-radius:14px;margin-bottom:14px}
 .nav button{min-height:42px;border-radius:10px;font-weight:700;font-size:.88rem;color:var(--muted)}
 .nav button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
@@ -236,6 +237,8 @@ window.LIQUIDA_CFG={"endpoint": "https://formspree.io/f/mkjjodoz", "email": ""};
 //            Premium funciona en modo demo (el botón lo activa gratis). Con clave, solo se activa con un código válido.
 //  pay:      enlaces de pago por plan (Mercado Pago, Culqi, Niubiz, Izipay…). Vacío = se pide el correo y te contactas.
 //  whatsapp: número con código de país y sin signos (ej. 51999888777) para el botón «Escríbenos». Vacío = no se muestra.
+// Supabase: pega aquí la URL del proyecto y la clave pública «anon» (nunca la «service_role»). Vacío = sin cuentas.
+window.LIQUIDA_SB={"url": "", "anon": ""};
 window.LIQUIDA_LIC={"pub": {"kty":"EC","crv":"P-256","x":"jgbedcVWIsf8hE0BQABMJshOhnUpZImEkaOREY2D6Xw","y":"uwcfwYZGsqd-Jno9jaM_cDX3iPfHDMx-HgRZ-OHvj4M"}, "pay": {"mensual": "", "anual": ""}, "whatsapp": "51960250506", "yape": "51960250506"};
 /*PURE*/
 const RMV = 1230, UIT = 5500, ASIG = RMV * 0.10;
@@ -609,6 +612,13 @@ function qrSvg(text, px) {
    El QR lleva un enlace a verificar.html con los datos y la firma: sirve para comprobar que la boleta
    no fue modificada. No es una firma digital con certificado emitido por una entidad acreditada. */
 const FIRMA_URL = 'https://rbc01-source.github.io/liquida/verificar.html';
+// En producción (Netlify, dominio propio o GitHub Pages) el enlace del QR apunta al mismo sitio donde se emitió la boleta.
+function firmaUrl() {
+  try {
+    if (/^https?:$/.test(location.protocol) && !/^(localhost|127\.|\[)/.test(location.hostname)) return location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '') + 'verificar.html';
+  } catch (e) {}
+  return FIRMA_URL;
+}
 function b64u(bytes) {
   let s = ''; for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
   return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -652,6 +662,57 @@ function proxTexto(e) {
 }
 function benNorm(s) { return String(s || '').replace(/<[^>]*>/g, ' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
 function benMatch(i, k, q) { q = benNorm(q).trim(); return !q || benNorm(i.t + ' ' + i[k] + ' ' + i.w + ' ' + i.f).indexOf(q) >= 0; }
+
+/* ---------- Cuentas con Supabase (Auth + REST, sin librerías) ----------
+   La página solo contiene la URL del proyecto y la clave pública «anon». Los datos están protegidos por
+   Row Level Security (ver supabase/schema.sql). La contraseña nunca se guarda en la página: viaja por HTTPS a Supabase. */
+function sbMsg(e) {
+  const c = String((e && (e.code || '')) || '').toLowerCase(), m = String((e && e.message) || '').toLowerCase();
+  if (c === 'invalid_credentials' || m.indexOf('invalid login') >= 0) return 'Correo o contraseña incorrectos.';
+  if (c === 'email_not_confirmed' || m.indexOf('not confirmed') >= 0) return 'Falta confirmar tu correo: abre el enlace que te enviamos.';
+  if (c === 'user_already_exists' || m.indexOf('already registered') >= 0) return 'Ese correo ya tiene una cuenta. Inicia sesión.';
+  if (c === 'weak_password' || m.indexOf('at least') >= 0 || m.indexOf('weak') >= 0) return 'La contraseña es muy débil: usa al menos 8 caracteres.';
+  if (c.indexOf('rate_limit') >= 0 || (e && e.status === 429)) return 'Demasiados intentos. Espera unos minutos y vuelve a probar.';
+  if (c === 'signup_disabled') return 'El registro de cuentas está desactivado por ahora.';
+  if (c === 'validation_failed' || m.indexOf('invalid email') >= 0 || m.indexOf('unable to validate email') >= 0) return 'Revisa el correo: no parece válido.';
+  if (e && e.status === 0) return 'No hay conexión. Revisa tu internet.';
+  return 'No se pudo completar la operación. Inténtalo de nuevo.';
+}
+async function sbCall(cfg, f, method, path, body, token, extra) {
+  const h = { apikey: cfg.anon, Authorization: 'Bearer ' + (token || cfg.anon), 'Content-Type': 'application/json' };
+  if (extra) Object.keys(extra).forEach(function (k) { h[k] = extra[k]; });
+  let r;
+  try { r = await f(String(cfg.url).replace(/\/+$/, '') + path, { method: method, headers: h, body: body === undefined ? undefined : JSON.stringify(body) }); }
+  catch (x) { const e = new Error('network'); e.status = 0; throw e; }
+  let j = null; try { j = await r.json(); } catch (x) {}
+  if (!r.ok) { const e = new Error((j && (j.msg || j.message || j.error_description || j.error)) || ('HTTP ' + r.status)); e.status = r.status; e.code = j && (j.error_code || j.code); throw e; }
+  return j;
+}
+function sbSession(j, now) {
+  if (!j || !j.access_token || !j.refresh_token || !j.user || !j.user.id) return null;
+  return { access_token: j.access_token, refresh_token: j.refresh_token, exp: j.expires_at || (Math.floor(now / 1000) + (j.expires_in || 3600)), uid: j.user.id, email: String(j.user.email || '') };
+}
+function sbRedir(r) { return r ? '?redirect_to=' + encodeURIComponent(r) : ''; }
+function sbSignUp(cfg, f, email, pass, redir) { return sbCall(cfg, f, 'POST', '/auth/v1/signup' + sbRedir(redir), { email: email, password: pass }); }
+function sbSignIn(cfg, f, email, pass) { return sbCall(cfg, f, 'POST', '/auth/v1/token?grant_type=password', { email: email, password: pass }); }
+function sbRefresh(cfg, f, rt) { return sbCall(cfg, f, 'POST', '/auth/v1/token?grant_type=refresh_token', { refresh_token: rt }); }
+function sbRecover(cfg, f, email, redir) { return sbCall(cfg, f, 'POST', '/auth/v1/recover' + sbRedir(redir), { email: email }); }
+function sbUpdatePass(cfg, f, token, pass) { return sbCall(cfg, f, 'PUT', '/auth/v1/user', { password: pass }, token); }
+function sbSignOut(cfg, f, token) { return sbCall(cfg, f, 'POST', '/auth/v1/logout', undefined, token).catch(function () {}); }
+async function sbSuscripcion(cfg, f, token, email) {
+  const rows = await sbCall(cfg, f, 'GET', '/rest/v1/suscripciones?select=plan,vence&email=eq.' + encodeURIComponent(String(email).toLowerCase()) + '&limit=1', undefined, token);
+  const r = Array.isArray(rows) ? rows[0] : null;
+  return r && (r.plan === 'mensual' || r.plan === 'anual') && /^\d{4}-\d{2}-\d{2}$/.test(String(r.vence)) ? { plan: r.plan, vence: r.vence } : null;
+}
+function sbSubActiva(sub, hoy) { return !!sub && sub.vence >= hoy; }
+function sbGuardar(cfg, f, token, uid, estado) {
+  return sbCall(cfg, f, 'POST', '/rest/v1/datos?on_conflict=user_id', { user_id: uid, estado: estado, updated_at: new Date().toISOString() }, token, { Prefer: 'resolution=merge-duplicates,return=minimal' });
+}
+async function sbTraer(cfg, f, token) {
+  const rows = await sbCall(cfg, f, 'GET', '/rest/v1/datos?select=estado,updated_at&limit=1', undefined, token);
+  return Array.isArray(rows) && rows[0] && rows[0].estado && typeof rows[0].estado === 'object' ? rows[0] : null;
+}
+function sbEstadoValido(e) { return !!e && typeof e === 'object' && Array.isArray(e.workers) && e.workers.length <= 500 && e.nov && typeof e.nov === 'object' && e.empresa && typeof e.empresa === 'object'; }
 /*ENDPURE*/
 
 /* ------------------------------ UI ------------------------------ */
@@ -662,10 +723,14 @@ const toastEl = document.getElementById('toast');
 function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 const today = new Date(), ago = new Date(today.getFullYear() - 2, today.getMonth(), 1);
 const LIC = window.LIQUIDA_LIC || {};
+const SBC = window.LIQUIDA_SB || {};
+function sbOn() { return /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(String(SBC.url || '').replace(/\/+$/, '')) && String(SBC.anon || '').length > 20; }
+const SBKEY = 'liquida.sb.v1';
 function licOn() { return !!LIC.pub; }          // con clave pública configurada, Premium exige un código válido
 let S = {
   plan: 'anual', premium: false, tab: 'calc', calc: 'grati', workers: [],
-  licCode: '', lic: null, licInfo: null, licMsg: '', licDraft: '',
+  licCode: '', lic: null, licInfo: null, licMsg: '', licDraft: '', subPrem: false, sub: null,
+  sb: { sess: null, mode: 'login', msg: '', ok: false, busy: false, confirmLoad: false },
   period: iso(today).slice(0, 7), nov: {}, empresa: { name: '', ruc: '' },
   f: { sueldo: 2500, asig: false, varProm: 0, reg: 'general', eps: false, meses: 6, dias: 0, gratiLast: '',
        modo: 'trunca', diasGoce: 15, ingreso: iso(ago), cese: iso(today), vencidos: 0, despido: false, monto: 5000, susp: false, pension: 'afp', afpPct: 12.5 }
@@ -1050,7 +1115,7 @@ function guideView() {
 function render() {
   const t = S.tab;
   let h = '<header class="top"><div class="brand"><svg class="logo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9"/><path d="M9 24V10M9 10h7a4 4 0 010 8H9M17 18l7 6"/></svg><div>Liquida<small>Beneficios laborales Perú</small></div></div>' +
-    '<button type="button" class="pchip" data-act="prem" aria-label="Plan">' + (S.premium ? '<b>Premium</b>' : 'Plan <b>Gratis</b>') + '</button></header>' +
+    '<div class="chips">' + (sbOn() ? '<button type="button" class="pchip" data-act="cuenta" aria-label="Mi cuenta">' + (S.sb.sess ? '<b>Mi cuenta</b>' : 'Entrar') + '</button>' : '') + '<button type="button" class="pchip" data-act="prem" aria-label="Plan">' + (S.premium ? '<b>Premium</b>' : 'Plan <b>Gratis</b>') + '</button></div></header>' +
     '<nav class="nav" role="tablist">' + [['calc', 'Calcular'], ['team', 'Equipo'], ['plan', 'Planilla'], ['guide', 'Beneficios']].map(function (x) {
       return '<button type="button" role="tab" data-act="tab" data-v="' + x[0] + '" aria-selected="' + (t === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</nav>';
   h += t === 'calc' ? calcView() : t === 'team' ? teamView() : t === 'plan' ? planillaView() : guideView();
@@ -1074,6 +1139,98 @@ function planButtons() {
   return '<div class="plans"><button type="button" class="plan" data-act="plan" data-v="mensual" aria-pressed="' + (S.plan === 'mensual') + '"><span>Mensual</span><b>S/ 29</b></button><button type="button" class="plan" data-act="plan" data-v="anual" aria-pressed="' + (S.plan === 'anual') + '"><span>Anual</span><b>S/ 290</b><em>2 meses gratis</em></button></div>';
 }
 function yapeFmt(n) { const m = /^51(\d{3})(\d{3})(\d{3})$/.exec(n); return m ? m[1] + ' ' + m[2] + ' ' + m[3] : n; }
+
+// ---------- Cuenta (Supabase) ----------
+function finishPrem() { if (licOn()) S.premium = !!S.lic || !!S.subPrem; }
+function calcUrl() { try { return location.href.replace(/[?#].*$/, ''); } catch (e) { return ''; } }
+function sbSave() { try { if (S.sb.sess) localStorage.setItem(SBKEY, JSON.stringify(S.sb.sess)); else localStorage.removeItem(SBKEY); } catch (e) {} }
+function sbDrop() { S.sb.sess = null; S.sub = null; S.subPrem = false; sbSave(); finishPrem(); }
+async function sbToken() {
+  const ss = S.sb.sess; if (!ss) return null;
+  if (ss.exp - 60 > Math.floor(Date.now() / 1000)) return ss.access_token;
+  try { const n = sbSession(await sbRefresh(SBC, fetch, ss.refresh_token), Date.now()); if (!n) throw new Error('x'); S.sb.sess = n; sbSave(); return n.access_token; }
+  catch (e) { if (e.status === 400 || e.status === 401 || e.status === 403) sbDrop(); return null; }
+}
+// La suscripción se confirma con el servidor en cada carga; sin internet no se concede Premium por cuenta.
+async function sbRefreshSub() {
+  const tok = await sbToken(); if (!tok || !S.sb.sess) return;
+  try { S.sub = await sbSuscripcion(SBC, fetch, tok, S.sb.sess.email); S.subPrem = sbSubActiva(S.sub, iso(new Date())); }
+  catch (e) { if (e.status === 401 || e.status === 403) sbDrop(); }
+  finishPrem();
+}
+function mailOk(v) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(v || '').trim()); }
+function openCuenta() {
+  const B = S.sb;
+  let h = '<div class="sh-top"><h2>Mi cuenta</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>';
+  const msg = B.msg ? '<div class="note" role="alert">' + ICON.info + '<span>' + esc(B.msg) + '</span></div>' : '';
+  if (!B.sess) {
+    const reg = B.mode === 'signup';
+    h += '<div class="rg" role="group" aria-label="Modo"><button type="button" data-act="sb-mode" data-v="login" aria-pressed="' + !reg + '">Entrar</button><button type="button" data-act="sb-mode" data-v="signup" aria-pressed="' + reg + '">Crear cuenta</button></div>' +
+      '<div class="fld"><label for="sb-email">Correo</label><input id="sb-email" type="email" autocomplete="email" inputmode="email" maxlength="120"></div>' +
+      '<div class="fld"><label for="sb-pass">Contraseña' + (reg ? ' (mínimo 8 caracteres)' : '') + '</label><input id="sb-pass" type="password" autocomplete="' + (reg ? 'new-password' : 'current-password') + '" maxlength="72"></div>' +
+      '<button type="button" class="btn block" data-act="' + (reg ? 'sb-signup' : 'sb-login') + '"' + (B.busy ? ' disabled' : '') + '>' + (B.busy ? 'Un momento…' : reg ? 'Crear mi cuenta' : 'Entrar') + '</button>' +
+      (reg ? '' : '<button type="button" class="btn ghost block" data-act="sb-reset">Olvidé mi contraseña</button>') + msg +
+      '<p class="fine">Con una cuenta guardas tus trabajadores en la nube y activas Premium con tu correo. Tu contraseña la guarda Supabase, cifrada: Liquida no puede verla.</p>';
+  } else {
+    const sb = S.sub;
+    const wa = LIC.whatsapp && /^\d{8,15}$/.test(LIC.whatsapp) ? ' <a href="https://wa.me/' + LIC.whatsapp + '?text=' + encodeURIComponent('Hola, ya pagué Liquida Premium. Mi correo es ' + B.sess.email) + '" target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a>' : '';
+    h += '<div class="note">' + ICON.check + '<span>Sesión iniciada como <b>' + esc(B.sess.email) + '</b>.</span></div>' +
+      '<div class="note">' + ICON.info + '<span>' + (S.subPrem ? 'Suscripción activa: plan <b>' + esc(sb.plan) + '</b>, hasta el <b>' + dmy(sb.vence) + '</b>.' : sb ? 'Tu suscripción venció el <b>' + dmy(sb.vence) + '</b>. Renuévala para seguir con Premium.' + wa : 'No hay una suscripción asociada a este correo. Si ya pagaste, avísanos con este correo.' + wa) + '</span></div>' +
+      '<h3 class="gt">Mis datos en la nube</h3><p class="fine">Guarda una copia de tus trabajadores, novedades y datos del empleador en tu cuenta. Solo tú puedes verla. No se guardan las firmas de boletas ni las llaves.</p>' +
+      '<div class="acts-col"><button type="button" class="btn block" data-act="sb-save"' + (B.busy ? ' disabled' : '') + '>Guardar mis datos en la nube</button>' +
+      (B.confirmLoad ? '<div class="note">' + ICON.info + '<span>Esto reemplaza los trabajadores y novedades de este navegador por los de la nube.</span></div><button type="button" class="btn block" data-act="sb-load-ok">Sí, reemplazar con los datos de la nube</button><button type="button" class="btn ghost block" data-act="sb-load-no">Cancelar</button>'
+        : '<button type="button" class="btn ghost block" data-act="sb-load"' + (B.busy ? ' disabled' : '') + '>Traer mis datos de la nube</button>') + '</div>' + msg +
+      '<button type="button" class="btn ghost block" data-act="sb-out">Cerrar sesión</button>';
+  }
+  openSheet(h);
+}
+function openNuevaClave() {
+  openSheet('<div class="sh-top"><h2>Nueva contraseña</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>' +
+    '<div class="fld"><label for="sb-new">Escribe tu nueva contraseña (mínimo 8 caracteres)</label><input id="sb-new" type="password" autocomplete="new-password" maxlength="72"></div>' +
+    '<button type="button" class="btn block" data-act="sb-newpass">Guardar contraseña</button>' + (S.sb.msg ? '<div class="note" role="alert">' + ICON.info + '<span>' + esc(S.sb.msg) + '</span></div>' : ''));
+}
+function sbEstado() { return { workers: S.workers, nov: S.nov, empresa: S.empresa }; }
+async function sbAct(a) {
+  const B = S.sb, val = function (id) { const e = document.getElementById(id); return e ? String(e.value || '') : ''; };
+  if (B.busy) return;
+  try {
+    if (a === 'sb-login' || a === 'sb-signup') {
+      const email = val('sb-email').trim(), pass = val('sb-pass');
+      if (!mailOk(email)) { B.msg = 'Escribe un correo válido.'; B.ok = false; return openCuenta(); }
+      if (pass.length < 8) { B.msg = 'La contraseña debe tener al menos 8 caracteres.'; B.ok = false; return openCuenta(); }
+      B.busy = true; B.msg = ''; openCuenta();
+      if (a === 'sb-signup') {
+        const j = await sbSignUp(SBC, fetch, email, pass, calcUrl());
+        const sess = sbSession(j, Date.now());
+        if (sess) { B.sess = sess; sbSave(); B.msg = ''; await sbRefreshSub(); toast('Cuenta creada'); }
+        else { B.mode = 'login'; B.msg = 'Te enviamos un correo para confirmar tu cuenta. Ábrelo, toca el enlace y vuelve a entrar. Revisa también el spam.'; B.ok = true; }
+      } else {
+        const sess = sbSession(await sbSignIn(SBC, fetch, email, pass), Date.now());
+        if (!sess) throw new Error('x');
+        B.sess = sess; sbSave(); B.msg = ''; await sbRefreshSub(); toast('Sesión iniciada');
+      }
+    } else if (a === 'sb-reset') {
+      const email = val('sb-email').trim();
+      if (!mailOk(email)) { B.msg = 'Escribe tu correo arriba y vuelve a tocar «Olvidé mi contraseña».'; return openCuenta(); }
+      B.busy = true; await sbRecover(SBC, fetch, email, calcUrl()); B.msg = 'Si ese correo tiene cuenta, te enviamos un enlace para crear una contraseña nueva.'; B.ok = true;
+    } else if (a === 'sb-save') {
+      const tok = await sbToken(); if (!tok) { B.msg = 'Tu sesión venció. Entra de nuevo.'; return openCuenta(); }
+      B.busy = true; openCuenta(); await sbGuardar(SBC, fetch, tok, B.sess.uid, sbEstado()); B.msg = 'Listo: tus datos quedaron guardados en la nube.'; B.ok = true;
+    } else if (a === 'sb-load-ok') {
+      const tok = await sbToken(); if (!tok) { B.msg = 'Tu sesión venció. Entra de nuevo.'; B.confirmLoad = false; return openCuenta(); }
+      B.busy = true; const r = await sbTraer(SBC, fetch, tok); B.confirmLoad = false;
+      if (!r) B.msg = 'Todavía no hay datos guardados en tu cuenta.';
+      else if (!sbEstadoValido(r.estado)) B.msg = 'Los datos de la nube no tienen el formato esperado.';
+      else { S.workers = r.estado.workers; S.nov = r.estado.nov; S.empresa = { name: String(r.estado.empresa.name || ''), ruc: String(r.estado.empresa.ruc || '') }; save(); render(); B.msg = 'Listo: se cargaron tus datos de la nube.'; B.ok = true; }
+    } else if (a === 'sb-newpass') {
+      const np = val('sb-new');
+      if (np.length < 8) { B.msg = 'La contraseña debe tener al menos 8 caracteres.'; return openNuevaClave(); }
+      const tok = await sbToken(); if (!tok) { B.msg = 'El enlace venció. Pide uno nuevo desde «Olvidé mi contraseña».'; return openNuevaClave(); }
+      B.busy = true; await sbUpdatePass(SBC, fetch, tok, np); B.busy = false; B.recovery = false; B.msg = ''; toast('Contraseña actualizada'); return openCuenta();
+    }
+  } catch (e) { B.msg = sbMsg(e); B.ok = false; if (e && (e.status === 401 || e.status === 403) && B.sess) { B.msg = 'Tu sesión venció. Entra de nuevo.'; sbDrop(); } }
+  B.busy = false; openCuenta(); render();
+}
 function openPremium() {
   const head = '<div class="sh-top"><h2>Liquida Premium</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>';
   if (!licOn()) {   // modo demo: todavía no hay clave configurada
@@ -1086,7 +1243,10 @@ function openPremium() {
   const code = '<div class="fld"><label for="p-code">' + (S.premium ? 'Tengo un código nuevo (renovar)' : 'Ya tengo un código') + '</label><textarea id="p-code" rows="3" autocomplete="off" spellcheck="false" placeholder="LQ1.…">' + esc(S.licDraft) + '</textarea></div>' +
     '<button type="button" class="btn' + (S.premium ? ' ghost' : '') + ' block" data-act="activate">Activar con mi código</button>' +
     (S.licMsg ? '<div class="note" role="alert">' + ICON.info + '<span>' + esc(S.licMsg) + '</span></div>' : '');
-  if (S.premium && S.lic) {
+  if (S.premium && !S.lic && S.subPrem && S.sub) {
+    h += '<div class="note">' + ICON.check + '<span>Premium activo con tu cuenta <b>' + esc(S.sb.sess ? S.sb.sess.email : '') + '</b> (plan ' + esc(S.sub.plan) + '). Válido hasta el <b>' + dmy(S.sub.vence) + '</b>.</span></div>' + premBenefits() +
+      '<button type="button" class="btn ghost block" data-act="cuenta">Mi cuenta</button>' + code;
+  } else if (S.premium && S.lic) {
     h += '<div class="note">' + ICON.check + '<span>Premium activo para <b>' + esc(maskEmail(S.lic.email)) + '</b> (plan ' + esc(S.lic.plan) + '). Válido hasta el <b>' + dmy(S.lic.exp) + '</b>.</span></div>' + premBenefits() + code +
       '<button type="button" class="btn ghost block" data-act="unprem">Quitar Premium de este navegador</button>';
   } else {
@@ -1098,7 +1258,7 @@ function openPremium() {
       ? '<div class="note">' + ICON.info + '<span>Paga <b>' + price + '</b> por <b>Yape o Plin</b> al <b>' + esc(yapeFmt(LIC.yape)) + '</b> y envíanos el comprobante por WhatsApp con tu correo. Te enviamos tu código de acceso.</span></div>'
       : '<div class="fld"><label for="p-mail">Tu correo (te enviamos los datos de pago)</label><input id="p-mail" type="email" autocomplete="email" placeholder="tucorreo@ejemplo.com"></div><button type="button" class="btn block" data-act="lead">Quiero Premium</button>';
     if (S.licInfo && S.licInfo.reason === 'expired') h += '<div class="note">' + ICON.info + '<span>Tu Premium venció el <b>' + dmy(S.licInfo.exp) + '</b>. Renuévalo para seguir usando boletas y exportaciones.</span></div>';
-    h += premBenefits() + planButtons() + pay + wa +
+    h += premBenefits() + planButtons() + pay + wa + (sbOn() && !S.sb.sess ? '<button type="button" class="btn ghost block" data-act="cuenta">Ya pagué: entrar con mi cuenta</button>' : '') +
       '<p class="fine center">Después de pagar recibes un código de acceso. Pégalo abajo para activar Premium.</p>' + code;
   }
   h += '<p class="fine center"><a href="precios.html">Ver precios y cómo pagar</a></p>';
@@ -1170,7 +1330,7 @@ async function firmarBoleta(w, b) {
   const ts = Math.floor(Date.now() / 1000), K = await signKeys();
   const data = b64u(utf8(JSON.stringify(firmaData(w, b, S.empresa.ruc, S.period, ts))));
   const sig = new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, K.priv, utf8(data)));
-  return { url: FIRMA_URL + '#' + firmaToken(data, b64u(sig), K.pub), huella: K.pub.x.slice(0, 8), ts: ts };
+  return { url: firmaUrl() + '#' + firmaToken(data, b64u(sig), K.pub), huella: K.pub.x.slice(0, 8), ts: ts };
 }
 function firmasLoad() { try { return JSON.parse(localStorage.getItem(FKEY)) || {}; } catch (e) { return {}; } }
 function firmaTrab(id) { const v = firmasLoad()[id + '|' + S.period]; return typeof v === 'string' && v.indexOf('data:image/png;base64,') === 0 ? v : ''; }
@@ -1307,6 +1467,12 @@ function onClick(e) {
   else if (a === 'clearnov') { if (S.nov[S.period]) delete S.nov[S.period][b.dataset.id]; save(); closeSheet(); render(); toast('Novedades limpiadas'); }
   else if (a === 'editw') openAdd(b.dataset.id);
   else if (a === 'prem') openPremium();
+  else if (a === 'cuenta') { if (sbOn()) { S.sb.msg = ''; S.sb.confirmLoad = false; openCuenta(); } }
+  else if (a === 'sb-mode') { S.sb.mode = v === 'signup' ? 'signup' : 'login'; S.sb.msg = ''; openCuenta(); }
+  else if (a === 'sb-out') { const tk = S.sb.sess && S.sb.sess.access_token; if (tk) sbSignOut(SBC, fetch, tk); sbDrop(); S.sb.msg = ''; closeSheet(); render(); toast('Sesión cerrada'); }
+  else if (a === 'sb-load') { S.sb.confirmLoad = true; S.sb.msg = ''; openCuenta(); }
+  else if (a === 'sb-load-no') { S.sb.confirmLoad = false; openCuenta(); }
+  else if (a === 'sb-login' || a === 'sb-signup' || a === 'sb-reset' || a === 'sb-save' || a === 'sb-load-ok' || a === 'sb-newpass') sbAct(a);
   else if (a === 'plan') { S.plan = v; openPremium(); }
   else if (a === 'goprem') { if (licOn()) return; const pm = document.getElementById('p-mail'); if (pm && pm.value) sendLead(pm.value.trim()); S.premium = true; recordInterest(); save(); closeSheet(); render(); toast('Premium activado (demo)'); }
   else if (a === 'unprem') { S.premium = false; S.lic = null; S.licInfo = null; S.licCode = ''; S.licMsg = ''; S.licDraft = ''; S.f.despido = false; save(); closeSheet(); render(); }
@@ -1365,11 +1531,34 @@ render();
 // Con cobro activo, el Premium guardado se vuelve a verificar al abrir la página (firma y vencimiento).
 if (licOn() && S.licCode) {
   licVerify(S.licCode, LIC.pub, iso(new Date())).then(function (r) {
-    if (r.ok) { S.premium = true; S.lic = r; S.licInfo = null; }
-    else { S.premium = false; S.lic = null; S.licInfo = r; }
+    if (r.ok) { S.lic = r; S.licInfo = null; }
+    else { S.lic = null; S.licInfo = r; }
+    finishPrem();
     render();
   });
 }
+// Cuentas: restaura la sesión, procesa el enlace del correo (confirmación o nueva contraseña) y confirma la suscripción con el servidor.
+(async function sbBoot() {
+  if (!sbOn()) return;
+  try {
+    const j = JSON.parse(localStorage.getItem(SBKEY) || 'null');
+    if (j && j.access_token && j.refresh_token && j.uid && j.email) S.sb.sess = j;
+  } catch (e) {}
+  try {
+    const o = {};
+    String(location.hash || '').replace(/^#/, '').split('&').forEach(function (kv) { const q = kv.split('='); if (q[0]) o[q[0]] = decodeURIComponent(q[1] || ''); });
+    if (o.access_token && o.refresh_token) {
+      const u = await sbCall(SBC, fetch, 'GET', '/auth/v1/user', undefined, o.access_token);
+      S.sb.sess = { access_token: o.access_token, refresh_token: o.refresh_token, exp: Math.floor(Date.now() / 1000) + (Number(o.expires_in) || 3600), uid: u.id, email: String(u.email || '') };
+      sbSave();
+      if (o.type === 'recovery') S.sb.recovery = true;
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    }
+  } catch (e) {}
+  if (S.sb.sess) await sbRefreshSub();
+  render();
+  if (S.sb.recovery && S.sb.sess) openNuevaClave();
+})();
 
 </script>
 </body></html>
