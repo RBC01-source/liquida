@@ -1121,7 +1121,7 @@ function render() {
     '<nav class="nav" role="tablist">' + [['calc', 'Calcular'], ['team', 'Equipo'], ['plan', 'Planilla'], ['guide', 'Beneficios']].map(function (x) {
       return '<button type="button" role="tab" data-act="tab" data-v="' + x[0] + '" aria-selected="' + (t === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</nav>';
   h += t === 'calc' ? calcView() : t === 'team' ? teamView() : t === 'plan' ? planillaView() : guideView();
-  h += '<footer class="disc"><span><a href="beneficios-sociales-peru.html">Beneficios</a> · <a href="precios.html">Precios</a> · <a href="index.html">Inicio</a></span><span>Cálculos referenciales, no constituyen asesoría legal ni financiera.</span></footer>';
+  h += '<footer class="disc"><span><a href="beneficios-sociales-peru.html">Beneficios</a> · <a href="precios.html">Precios</a> · <a href="privacidad.html">Privacidad</a> · <a href="terminos.html">Términos</a> · <a href="index.html">Inicio</a></span><span>Cálculos referenciales, no constituyen asesoría legal ni financiera.</span></footer>';
   app.innerHTML = h;
 }
 
