@@ -731,7 +731,7 @@ function cleanW(w) {
   if (!w || typeof w !== 'object' || typeof w.id !== 'string' || !/^[A-Za-z0-9_-]{1,40}$/.test(w.id)) return null;
   const t = function (x, n) { return String(x == null ? '' : x).slice(0, n || 80); };
   return { id: w.id, name: t(w.name), dni: t(w.dni, 20), sueldo: isFinite(Number(w.sueldo)) ? Math.min(1e9, Math.max(0, Number(w.sueldo))) : 0, asig: !!w.asig,
-    reg: hasO(REG, w.reg) ? w.reg : 'general', pension: t(w.pension, 10), afp: t(w.afp, 20), comision: t(w.comision, 10), eps: !!w.eps };
+    reg: hasO(REG, w.reg) ? w.reg : 'general', pension: ['afp', 'onp', 'none'].indexOf(w.pension) >= 0 ? w.pension : 'afp', afp: hasO(AFP, w.afp) ? w.afp : 'integra', comision: w.comision === 'mixta' ? 'mixta' : 'flujo', eps: !!w.eps };
 }
 function cleanWs(a) { return (Array.isArray(a) ? a : []).slice(0, 500).map(cleanW).filter(Boolean); }
 function cleanNov(n) {
