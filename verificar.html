@@ -144,8 +144,8 @@ svg{display:block}
 
 .site{max-width:680px;margin:0 auto;padding-bottom:48px}
 .site .top a{color:inherit;text-decoration:none}
-.site nav.links{display:flex;gap:14px;flex-wrap:wrap;font-weight:700;font-size:.9rem}
-.site nav.links a{color:var(--muted);text-decoration:none}
+.site nav.links{display:flex;gap:6px;flex-wrap:wrap;font-weight:700;font-size:.9rem}
+.site nav.links a{color:var(--muted);text-decoration:none;display:inline-block;padding:11px 6px}
 .site nav.links a:hover{color:var(--ink)}
 .hero{padding:26px 0 8px;display:grid;gap:14px}
 .hero h1{font-size:2.1rem;line-height:1.08;letter-spacing:-.04em;font-weight:800;text-wrap:balance}
@@ -195,7 +195,7 @@ svg{display:block}
 .res h2{font-size:1.15rem;font-weight:800;margin:0}
 .res .kv{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding-top:8px}
 .res .kv b.num{font-size:1rem}
-textarea.in{width:100%;min-height:90px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:10px;font:inherit;font-family:var(--f-mono);font-size:.78rem;color:var(--ink)}
+textarea.in{width:100%;min-height:90px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:10px;font:inherit;font-family:var(--f-mono);font-size:16px;color:var(--ink)}
 </style></head><body><div class="site">
 <header class="top"><a class="brand" href="index.html"><svg class="logo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9"/><path d="M9 24V10M9 10h7a4 4 0 010 8H9M17 18l7 6"/></svg><div>Liquida<small>Beneficios laborales Perú</small></div></a>
 <nav class="links" aria-label="Principal"><a href="calculadora.html">Calculadora</a><a href="beneficios-sociales-peru.html">Beneficios</a><a href="precios.html">Precios</a></nav></header>
@@ -242,7 +242,7 @@ async function run(txt){
   var r=await firmaVerify(txt);
   if(r.ok){
     var d=r.d, p=String(d.p).split('-'), f=new Date(d.t*1000);
-    out.innerHTML='<div class="res good"><h2>Boleta auténtica: los datos no fueron modificados</h2>'+
+    out.innerHTML='<div class="res good"><h2>La firma coincide: los datos no fueron modificados</h2>'+
       '<div class="kv"><span>Periodo</span><b>'+esc(MES[Number(p[1])-1]+' '+p[0])+'</b></div>'+
       '<div class="kv"><span>RUC del empleador</span><b>'+esc(d.r||'—')+'</b></div>'+
       '<div class="kv"><span>DNI del trabajador</span><b>'+esc(d.d||'—')+'</b></div>'+

@@ -1,0 +1,33 @@
+const fs=require('fs');
+const calc=fs.readFileSync(process.argv[2],'utf8'), ver=fs.readFileSync(process.argv[3],'utf8');
+const C=new Function(calc.split('/*PURE*/')[1].split('/*ENDPURE*/')[0]+';return {boleta,b64u,firmaData,firmaToken,firmaParse,firmaVerify,qrEncode,qrSvg,FIRMA_URL};')();
+const V=new Function(ver.match(/<script>([\s\S]*?)<\/script>/)[1].split('function fmt')[0]+';return {firmaParse,firmaVerify};')();
+let n=0,fail=0; function ok(t,c,x){n++;if(!c)fail++;console.log((c?'ok   ':'FAIL ')+t+(c?'':'  '+(x||'')));}
+(async()=>{
+  const kp=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);
+  const u=await crypto.subtle.exportKey('jwk',kp.publicKey); const pub={x:u.x,y:u.y};
+  const w={name:'Ana',dni:'12345678',sueldo:3000,asig:true,reg:'general',pension:'afp',afp:'integra',comision:'flujo',eps:false,id:'w1'};
+  const b=C.boleta(w,{},'2026-10');
+  const ts=1790000000;
+  const data=C.b64u(new TextEncoder().encode(JSON.stringify(C.firmaData(w,b,'20123456789','2026-10',ts))));
+  const sig=new Uint8Array(await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},kp.privateKey,new TextEncoder().encode(data)));
+  const frag=C.firmaToken(data,C.b64u(sig),pub); const url=C.FIRMA_URL+'#'+frag;
+  ok('Firma 64 bytes crudos',sig.length===64);
+  let r=await C.firmaVerify(url); ok('Verifica enlace completo',r.ok&&r.d.n===Math.round(b.neto*100)/100&&r.d.d==='12345678'&&r.d.r==='20123456789'&&r.huella===pub.x.slice(0,8));
+  r=await C.firmaVerify(frag); ok('Verifica solo el código',r.ok);
+  r=await V.firmaVerify(url); ok('verificar.html acepta lo que firma la calculadora',r.ok&&r.d.p==='2026-10');
+  const tamper=JSON.parse(new TextDecoder().decode(Buffer.from(data.replace(/-/g,'+').replace(/_/g,'/'),'base64'))); tamper.n=tamper.n+100;
+  const d2=C.b64u(new TextEncoder().encode(JSON.stringify(tamper)));
+  r=await C.firmaVerify(C.firmaToken(d2,C.b64u(sig),pub)); ok('Importe alterado: firma inválida',!r.ok&&r.reason==='signature');
+  const kp2=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']); const u2=await crypto.subtle.exportKey('jwk',kp2.publicKey);
+  r=await C.firmaVerify(C.firmaToken(data,C.b64u(sig),{x:u2.x,y:u2.y})); ok('Llave distinta: firma inválida',!r.ok&&r.reason==='signature');
+  r=await C.firmaVerify('hola'); ok('Texto cualquiera: formato',!r.ok&&r.reason==='format');
+  r=await C.firmaVerify(frag.split('.').slice(0,3).join('.')); ok('Código incompleto: formato',!r.ok&&r.reason==='format');
+  r=await C.firmaVerify('LQ1.aaa.bbb.ccc'); ok('Código de licencia no es boleta',!r.ok);
+  const bad=C.b64u(new TextEncoder().encode('{"v":1,"n":"x"}')); r=await C.firmaVerify(bad+'.'+C.b64u(sig)+'.'+pub.x+'.'+pub.y); ok('Datos incompletos: formato',!r.ok&&r.reason==='format');
+  ok('Largo del enlace razonable para un QR (≤ 500)',url.length<=500,url.length);
+  const m=C.qrEncode(url); ok('QR generado (versión ≤ 20)',m.length>=21&&m.length<=97,m.length);
+  ok('SVG del QR',C.qrSvg(url,116).startsWith('<svg')&&C.qrSvg(url,116).includes('<path'));
+  fs.writeFileSync(__dirname+'/qr_boleta.json',JSON.stringify([{t:url,m}]));
+  console.log('\n'+(n-fail)+'/'+n+' comprobaciones correctas'); process.exit(fail?1:0);
+})();

@@ -48,28 +48,29 @@ svg{display:block}
 .num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600}
 
 /* ---------- header ---------- */
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:18px 12px}
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding-block:18px 12px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.5rem;letter-spacing:-.04em}
 .brand small{display:block;font-weight:500;font-size:.78rem;letter-spacing:0;color:var(--muted);margin-top:-3px}
 .logo rect{fill:var(--accent)} .logo path{stroke:var(--on-accent);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.pchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:.78rem;font-weight:600;color:var(--muted)}
+.pchip{display:inline-flex;align-items:center;gap:6px;min-height:40px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-size:.78rem;font-weight:600;color:var(--muted)}
 .pchip b{color:var(--ink)}
-.chips{display:flex;gap:8px;align-items:center}
+.chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .nav{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--key);padding:4px;border-radius:14px;margin-bottom:14px}
 .nav button{min-height:42px;border-radius:10px;font-weight:700;font-size:.88rem;color:var(--muted)}
-.nav button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.nav button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
 
 /* ---------- cards & forms ---------- */
-.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow);display:grid;gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow);display:grid;gap:14px;min-width:0;overflow-wrap:anywhere}
 .card + .card{margin-top:14px}
 .card h2{font-size:1.05rem;font-weight:800;letter-spacing:-.02em}
 .eyebrow{font-weight:700;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .fld{display:grid;gap:5px;min-width:0}
 .fld label,.fld .l{font-size:.82rem;font-weight:700;color:var(--muted)}
-.fld input[type=text],.fld input[type=number],.fld input[type=date],.fld input[type=month],.fld select{width:100%;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:0 12px;font-weight:600}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.fld input[type=text],.fld input[type=number],.fld input[type=date],.fld input[type=month],.fld input[type=email],.fld input[type=password],.fld select{width:100%;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:0 12px;font-weight:600}
 .fld input.num{font-family:var(--f-mono)}
-.fld textarea{width:100%;min-height:84px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:10px 12px;font-family:var(--f-mono);font-size:.78rem;word-break:break-all;resize:vertical}
+.fld textarea{width:100%;min-height:84px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);padding:10px 12px;font-family:var(--f-mono);font-size:16px;word-break:break-all;resize:vertical}
 a.btn{text-decoration:none}
 .fld .hint{font-size:.76rem;color:var(--muted)}
 .chk{display:flex;gap:10px;align-items:center;min-height:44px;font-weight:600;font-size:.94rem}
@@ -88,7 +89,7 @@ a.btn{text-decoration:none}
 .chip.prem{background:var(--accent);color:var(--on-accent)}
 .seg{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
 .seg button{flex:none;min-height:38px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);font-weight:700;font-size:.88rem;color:var(--muted);background:var(--surface)}
-.seg button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.seg button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 
 /* ---------- results ---------- */
 .band{background:var(--band);color:var(--on-band);border-radius:16px;padding:16px;display:grid;gap:4px}
@@ -198,8 +199,8 @@ details.adv[open] summary{margin-bottom:10px}
 
 .site{max-width:680px;margin:0 auto;padding-bottom:48px}
 .site .top a{color:inherit;text-decoration:none}
-.site nav.links{display:flex;gap:14px;flex-wrap:wrap;font-weight:700;font-size:.9rem}
-.site nav.links a{color:var(--muted);text-decoration:none}
+.site nav.links{display:flex;gap:6px;flex-wrap:wrap;font-weight:700;font-size:.9rem}
+.site nav.links a{color:var(--muted);text-decoration:none;display:inline-block;padding:11px 6px}
 .site nav.links a:hover{color:var(--ink)}
 .hero{padding:26px 0 8px;display:grid;gap:14px}
 .hero h1{font-size:2.1rem;line-height:1.08;letter-spacing:-.04em;font-weight:800;text-wrap:balance}
@@ -226,7 +227,7 @@ details.adv[open] summary{margin-bottom:10px}
 @media (max-width:420px){.tiles{grid-template-columns:1fr}.hero h1{font-size:1.75rem}}
 </style></head><body>
 
-<div class="wrap" id="app"></div>
+<main class="wrap" id="app"></main>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="sheet-wrap" id="sheet" hidden></div>
 
@@ -241,6 +242,8 @@ window.LIQUIDA_CFG={"endpoint": "https://formspree.io/f/mkjjodoz", "email": ""};
 window.LIQUIDA_SB={"url":"https://dvhjimeelatvtojweyqj.supabase.co","anon":"sb_publishable_Ifd57BFp0pjAJohtGmsT9A_PNAbP28W"};
 window.LIQUIDA_LIC={"pub": {"kty":"EC","crv":"P-256","x":"jgbedcVWIsf8hE0BQABMJshOhnUpZImEkaOREY2D6Xw","y":"uwcfwYZGsqd-Jno9jaM_cDX3iPfHDMx-HgRZ-OHvj4M"}, "pay": {"mensual": "", "anual": ""}, "whatsapp": "51960250506", "yape": "51960250506"};
 /*PURE*/
+function hasO(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
+
 const RMV = 1230, UIT = 5500, ASIG = RMV * 0.10;
 const REG = {
   general: { n: 'Régimen general', g: 1, c: 1, v: 30 },
@@ -258,26 +261,29 @@ function span(a, b) {
   let m = (ey - A.y) * 12 + (em - A.m), d = ed - A.d;
   if (d < 0) { m--; d += new Date(Date.UTC(ey, em - 1, 0)).getUTCDate(); }
   if (d >= 30) { m++; d -= 30; }
+  if (d < 0) d = 0;                       // inicio día 30/31 y fin en febrero: el mes se completa sin días negativos
   if (m < 0) return { m: 0, d: 0 };
   return { m: m, d: d };
 }
 function computable(o) { return (o.sueldo || 0) + (o.asig ? ASIG : 0) + (o.varProm || 0); }
 function gratificacion(o) {
   const f = REG[o.reg], c = computable(o);
-  const base = c * f.g / 6 * o.meses;
+  const base = c * f.g / 6 * Math.min(6, Math.max(0, o.meses || 0));
   const bon = base * (o.eps ? 0.0675 : 0.09);
   return { comp: c, base: r2(base), bon: r2(bon), total: r2(base + bon) };
 }
 function cts(o) {
   const f = REG[o.reg], c = computable(o);
-  const gl = (o.gratiLast === '' || o.gratiLast == null) ? c * f.g : Number(o.gratiLast);
+  const gl = (o.gratiLast === '' || o.gratiLast == null || !isFinite(Number(o.gratiLast)) || Number(o.gratiLast) < 0) ? c * f.g : Number(o.gratiLast);
   const sexto = gl / 6, base = c + sexto;
-  const total = base * f.c * ((o.meses || 0) / 12 + (o.dias || 0) / 360);
+  const mm = Math.min(6, Math.max(0, o.meses || 0)), dd = mm >= 6 ? 0 : Math.min(29, Math.max(0, o.dias || 0));
+  const total = base * f.c * (mm / 12 + dd / 360);
   return { comp: c, sexto: r2(sexto), base: r2(base), total: r2(total) };
 }
 function vacTrunca(o) {
   const f = REG[o.reg], c = computable(o);
-  return r2(c * (f.v / 30) * ((o.meses || 0) / 12 + (o.dias || 0) / 360));
+  const mm = Math.min(11, Math.max(0, o.meses || 0)), dd = Math.min(29, Math.max(0, o.dias || 0));
+  return r2(c * (f.v / 30) * (mm / 12 + dd / 360));
 }
 function liquidacion(o) {
   const f = REG[o.reg], c = computable(o), C = parseD(o.cese);
@@ -286,8 +292,13 @@ function liquidacion(o) {
   const sc = span(cs, o.cese);
   const ctsR = cts({ sueldo: o.sueldo, asig: o.asig, varProm: o.varProm, reg: o.reg, meses: sc.m, dias: sc.d, gratiLast: '' });
   let gs = C.m >= 7 ? C.y + '-07-01' : C.y + '-01-01';
-  if (gs < o.ingreso) gs = o.ingreso;
-  const sg = span(gs, o.cese);
+  if (gs < o.ingreso) {
+    // solo cuentan meses calendario completos: si el ingreso no es día 1, se parte del día 1 del mes siguiente
+    const I = parseD(o.ingreso);
+    gs = I.d === 1 ? o.ingreso : (I.m === 12 ? (I.y + 1) + '-01-01' : I.y + '-' + String(I.m + 1).padStart(2, '0') + '-01');
+  }
+  const finMasUno = new Date(Date.UTC(C.y, C.m - 1, C.d + 1)).toISOString().slice(0, 10);   // el cese en el último día del mes completa ese mes
+  const sg = gs > o.cese ? { m: 0, d: 0 } : span(gs, finMasUno);
   const gr = gratificacion({ sueldo: o.sueldo, asig: o.asig, varProm: o.varProm, reg: o.reg, meses: Math.min(6, sg.m), eps: o.eps });
   const tot = span(o.ingreso, o.cese);
   const years = Math.floor(tot.m / 12), rm = tot.m % 12;
@@ -307,7 +318,7 @@ function liquidacion(o) {
   let indem = 0;
   if (o.despido) {
     const frac = years + rm / 12 + tot.d / 360, diaria = c / 30;
-    if (o.reg === 'general') indem = Math.max(3 * c, Math.min(1.5 * c * frac, 12 * c));
+    if (o.reg === 'general') indem = Math.min(1.5 * c * frac, 12 * c);   // art. 38 TUO D.S. 003-97-TR: 1.5 remuneraciones por año, máximo 12, sin mínimo
     else if (o.reg === 'pequena') indem = Math.min(20 * diaria * frac, 120 * diaria);
     else indem = Math.min(10 * diaria * frac, 90 * diaria);
     items.push({ k: 'ind', l: 'Indemnización por despido arbitrario', v: r2(indem) });
@@ -326,7 +337,7 @@ function bracketTax(neta) {
   return tax;
 }
 function honorarios(monto, susp) {
-  const ret = (!susp && monto > 3000) ? r2(monto * 0.08) : 0;
+  const ret = (!susp && monto > 1500) ? r2(monto * 0.08) : 0;
   const annual = monto * 12;
   const neta = Math.max(0, annual - Math.min(annual * 0.2, 24 * UIT) - 7 * UIT);
   const tax = r2(bracketTax(neta));
@@ -424,10 +435,10 @@ function boleta(w, nov, period) {
   if (sist === 'onp') {
     put(des, 'onp', 'ONP (13%)', afecta * 0.13);
   } else if (sist === 'afp') {
-    const a = AFP[w.afp] || AFP.integra, com = w.comision === 'mixta' ? 0 : a.flujo, bs = Math.min(afecta, AFP_TOPE);
+    const a = hasO(AFP, w.afp) ? AFP[w.afp] : AFP.integra, com = w.comision === 'mixta' ? 0 : a.flujo, bs = afecta, bp = Math.min(afecta, AFP_TOPE);   // el tope solo rige para la prima
     put(des, 'afp1', a.n + ': aporte obligatorio (' + AFP_APORTE + '%)', bs * AFP_APORTE / 100);
     put(des, 'afp2', a.n + ': comisión (' + com + '%)', bs * com / 100);
-    put(des, 'afp3', a.n + ': prima de seguro (' + AFP_PRIMA + '%)', bs * AFP_PRIMA / 100);
+    put(des, 'afp3', a.n + ': prima de seguro (' + AFP_PRIMA + '%)', bp * AFP_PRIMA / 100);
   }
   des.forEach(function (d) { pen += d.v; });
   pen = r2(pen);
@@ -700,7 +711,14 @@ function sbSignIn(cfg, f, email, pass) { return sbCall(cfg, f, 'POST', '/auth/v1
 function sbRefresh(cfg, f, rt) { return sbCall(cfg, f, 'POST', '/auth/v1/token?grant_type=refresh_token', { refresh_token: rt }); }
 function sbRecover(cfg, f, email, redir) { return sbCall(cfg, f, 'POST', '/auth/v1/recover' + sbRedir(redir), { email: email }); }
 function sbUpdatePass(cfg, f, token, pass) { return sbCall(cfg, f, 'PUT', '/auth/v1/user', { password: pass }, token); }
-function sbSignOut(cfg, f, token) { return sbCall(cfg, f, 'POST', '/auth/v1/logout', undefined, token).catch(function () {}); }
+// Revoca la sesión en el servidor; si el acceso ya venció, primero se renueva para poder cerrarla de verdad. Sin red falla en silencio.
+function sbRevoke(ss) {
+  if (!ss) return;
+  const now = Math.floor(Date.now() / 1000);
+  if (ss.exp - 30 > now) { sbSignOut(SBC, fetch, ss.access_token); return; }
+  sbRefresh(SBC, fetch, ss.refresh_token).then(function (r) { const n = sbSession(r, Date.now()); if (n) sbSignOut(SBC, fetch, n.access_token); }).catch(function () {});
+}
+function sbSignOut(cfg, f, token) { return sbCall(cfg, f, 'POST', '/auth/v1/logout?scope=local', undefined, token).catch(function () {}); }
 async function sbSuscripcion(cfg, f, token, email) {
   const rows = await sbCall(cfg, f, 'GET', '/rest/v1/suscripciones?select=plan,vence&email=eq.' + encodeURIComponent(String(email).toLowerCase()) + '&limit=1', undefined, token);
   const r = Array.isArray(rows) ? rows[0] : null;
@@ -714,7 +732,28 @@ async function sbTraer(cfg, f, token) {
   const rows = await sbCall(cfg, f, 'GET', '/rest/v1/datos?select=estado,updated_at&limit=1', undefined, token);
   return Array.isArray(rows) && rows[0] && rows[0].estado && typeof rows[0].estado === 'object' ? rows[0] : null;
 }
-function sbEstadoValido(e) { return !!e && typeof e === 'object' && Array.isArray(e.workers) && e.workers.length <= 500 && e.nov && typeof e.nov === 'object' && e.empresa && typeof e.empresa === 'object'; }
+function cleanW(w) {
+  if (!w || typeof w !== 'object' || typeof w.id !== 'string' || !/^[A-Za-z0-9_-]{1,40}$/.test(w.id)) return null;
+  const t = function (x, n) { return String(x == null ? '' : x).slice(0, n || 80); };
+  return { id: w.id, name: t(w.name), dni: t(w.dni, 20), sueldo: isFinite(Number(w.sueldo)) ? Math.min(1e9, Math.max(0, Number(w.sueldo))) : 0, asig: !!w.asig,
+    reg: hasO(REG, w.reg) ? w.reg : 'general', pension: ['afp', 'onp', 'none'].indexOf(w.pension) >= 0 ? w.pension : 'afp', afp: hasO(AFP, w.afp) ? w.afp : 'integra', comision: w.comision === 'mixta' ? 'mixta' : 'flujo', eps: !!w.eps };
+}
+function cleanWs(a) { return (Array.isArray(a) ? a : []).slice(0, 500).map(cleanW).filter(Boolean); }
+function cleanNov(n) {
+  const o = {}, K = ['faltas', 'tardanza', 'he25', 'he35', 'bonos', 'otros', 'mesesSem', 'remPrev', 'retPrev'];
+  if (!n || typeof n !== 'object') return o;
+  Object.keys(n).forEach(function (p) {
+    if (!/^\d{4}-\d{2}$/.test(p) || !n[p] || typeof n[p] !== 'object') return;
+    o[p] = {};
+    Object.keys(n[p]).forEach(function (id) {
+      const v = n[p][id]; if (!/^[A-Za-z0-9_-]{1,40}$/.test(id) || !v || typeof v !== 'object') return;
+      const c = {}; K.forEach(function (k) { if (v[k] !== undefined && v[k] !== '' && isFinite(Number(v[k]))) c[k] = Math.min(k === 'faltas' ? 30 : k === 'mesesSem' ? 6 : 1e9, Math.max(0, Number(v[k]))); });
+      o[p][id] = c;
+    });
+  });
+  return o;
+}
+function sbEstadoValido(e) { return !!e && typeof e === 'object' && Array.isArray(e.workers) && e.workers.length <= 500 && cleanWs(e.workers).length === e.workers.length && e.nov && typeof e.nov === 'object' && e.empresa && typeof e.empresa === 'object'; }
 /*ENDPURE*/
 
 /* ------------------------------ UI ------------------------------ */
@@ -728,22 +767,41 @@ const LIC = window.LIQUIDA_LIC || {};
 const SBC = window.LIQUIDA_SB || {};
 function sbOn() { return /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(String(SBC.url || '').replace(/\/+$/, '')) && String(SBC.anon || '').length > 20; }
 const SBKEY = 'liquida.sb.v1';
+const CALCS = [
+  { id: 'grati', n: 'Gratificación' }, { id: 'cts', n: 'CTS' }, { id: 'vac', n: 'Vacaciones' },
+  { id: 'liq', n: 'Liquidación' }, { id: 'hon', n: 'Honorarios' }, { id: 'neto', n: 'Sueldo neto' }
+];
 function licOn() { return !!LIC.pub; }          // con clave pública configurada, Premium exige un código válido
 let S = {
   plan: 'anual', premium: false, tab: 'calc', calc: 'grati', workers: [],
   licCode: '', lic: null, licInfo: null, licMsg: '', licDraft: '', subPrem: false, sub: null,
-  sb: { sess: null, mode: 'login', msg: '', ok: false, busy: false, confirmLoad: false },
+  sb: { sess: null, mode: 'login', msg: '', ok: false, busy: false, confirmLoad: false, open: false, subErr: false, pending: null, confirmWipe: false },
   period: iso(today).slice(0, 7), nov: {}, empresa: { name: '', ruc: '' },
   f: { sueldo: 2500, asig: false, varProm: 0, reg: 'general', eps: false, meses: 6, dias: 0, gratiLast: '',
        modo: 'trunca', diasGoce: 15, ingreso: iso(ago), cese: iso(today), vencidos: 0, despido: false, monto: 5000, susp: false, pension: 'afp', afpPct: 12.5 }
 };
+const F0 = JSON.parse(JSON.stringify(S.f));
+// Solo se aceptan los campos conocidos, con su tipo y rangos razonables; lo demás se ignora.
+function mergeF(g) {
+  if (!g || typeof g !== 'object') return;
+  Object.keys(F0).forEach(function (k) {
+    const d = F0[k], v = g[k]; if (v === undefined || v === null) return;
+    if (typeof d === 'boolean') S.f[k] = !!v;
+    else if (k === 'ingreso' || k === 'cese') { if (/^\d{4}-\d{2}-\d{2}$/.test(String(v)) && !isNaN(Date.parse(v)) && new Date(v + 'T00:00:00Z').toISOString().slice(0, 10) === String(v)) S.f[k] = String(v); }
+    else if (k === 'reg') { if (typeof v === 'string' && hasO(REG, v)) S.f[k] = v; }
+    else if (k === 'pension') { if (['afp', 'onp', 'none'].indexOf(v) >= 0) S.f[k] = v; }
+    else if (k === 'modo') { if (v === 'trunca' || v === 'goce') S.f[k] = v; }
+    else if (k === 'gratiLast') { S.f[k] = (v === '' || !isFinite(Number(v)) || Number(v) < 0) ? '' : Math.min(1e9, Number(v)); }
+    else if (typeof d === 'number') { const n = Number(v); if (isFinite(n)) S.f[k] = Math.min(k === 'afpPct' ? 100 : 1e9, Math.max(0, n)); }
+  });
+}
 try {
   const j = JSON.parse(localStorage.getItem(KEY) || 'null');
   if (j) {
     S.premium = !licOn() && !!j.premium;        // el «premium» guardado por la demo no vale cuando hay cobro
     S.licCode = typeof j.lic === 'string' ? j.lic : '';
-    S.workers = Array.isArray(j.workers) ? j.workers : []; S.calc = j.calc || S.calc; Object.assign(S.f, j.f || {});
-    if (j.nov && typeof j.nov === 'object') S.nov = j.nov;
+    S.workers = cleanWs(j.workers); S.calc = CALCS.some(function (c) { return c.id === j.calc; }) ? j.calc : S.calc; mergeF(j.f);
+    if (j.nov && typeof j.nov === 'object') S.nov = cleanNov(j.nov);
     if (j.empresa && typeof j.empresa === 'object') S.empresa = { name: String(j.empresa.name || ''), ruc: String(j.empresa.ruc || '') };
   }
 } catch (e) {}
@@ -788,9 +846,9 @@ function loadStats() {
     const snap = await DB.doc('data/users/' + UID + '/state').get();
     if (snap.exists) {
       const c = snap.data() || {};
-      if (!S.workers.length && Array.isArray(c.workers)) S.workers = c.workers;
+      if (!S.workers.length && Array.isArray(c.workers)) S.workers = cleanWs(c.workers);
       if (c.premium && !licOn()) S.premium = true;
-      if (!Object.keys(S.nov).length && c.nov && typeof c.nov === 'object') S.nov = c.nov;
+      if (!Object.keys(S.nov).length && c.nov && typeof c.nov === 'object') S.nov = cleanNov(c.nov);
       if (!S.empresa.name && !S.empresa.ruc && c.empresa) S.empresa = { name: String(c.empresa.name || ''), ruc: String(c.empresa.ruc || '') };
       try { localStorage.setItem(KEY, localBlob()); } catch (e) {}
     }
@@ -824,7 +882,7 @@ const ICON = {
   lock: '<svg class="i" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>'
 };
 function siteMode() { return !!window.LIQUIDA_CFG; }
-function csvCell(v) { v = String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+function csvCell(v) { v = String(v); if (/^[=+\-@\t\r]/.test(v) && isNaN(Number(v))) v = "'" + v; return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
 function downloadCSV(name, rows) {
   const text = '\uFEFF' + rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n');
   try {
@@ -845,11 +903,6 @@ function exportButtons(kind) {
   if (!S.premium) return '<button type="button" class="btn ghost block" data-act="prem">' + ICON.lock + ' Exportar a PDF y Excel (Premium)</button>';
   return '<div class="grid2"><button type="button" class="btn ghost" data-act="csv-' + kind + '">Descargar Excel (CSV)</button><button type="button" class="btn ghost" data-act="pdf-' + kind + '">Guardar como PDF</button></div>';
 }
-const CALCS = [
-  { id: 'grati', n: 'Gratificación' }, { id: 'cts', n: 'CTS' }, { id: 'vac', n: 'Vacaciones' },
-  { id: 'liq', n: 'Liquidación' }, { id: 'hon', n: 'Honorarios' }, { id: 'neto', n: 'Sueldo neto' }
-];
-
 function fld(label, k, type, hint) {
   type = type || 'number';
   const num = type === 'number';
@@ -868,7 +921,7 @@ function regSel() {
 function workerPick() {
   if (!S.workers.length) return '';
   let o = '<option value="">— Elegir de mi equipo —</option>';
-  S.workers.forEach(function (w) { o += '<option value="' + w.id + '">' + esc(w.name) + '</option>'; });
+  S.workers.forEach(function (w) { o += '<option value="' + esc(w.id) + '">' + esc(w.name) + '</option>'; });
   return '<div class="fld"><label for="wp">Trabajador guardado</label><select id="wp" data-act-change="pick">' + o + '</select></div>';
 }
 function commonFields() {
@@ -890,13 +943,13 @@ function formHTML() {
   }
   if (S.calc === 'cts') {
     return commonFields() + '<div class="grid2"><div class="fld"><label for="f-meses">Meses completos</label><select id="f-meses" data-k="meses">' + monthsSel('meses', 6) + '</select></div>' +
-      '<div class="fld"><label for="f-dias">Días adicionales</label><select id="f-dias" data-k="dias">' + monthsSel('dias', 29) + '</select></div></div>' +
+      '<div class="fld"><label for="f-dias">Días adicionales</label><select id="f-dias" data-k="dias">' + monthsSel('dias', Number(S.f.meses) >= 6 ? 0 : 29) + '</select></div></div>' +
       fld('Última gratificación (S/, opcional)', 'gratiLast', 'number', 'Vacío = se calcula con el sueldo');
   }
   if (S.calc === 'vac') {
-    let h = commonFields() + '<div class="fld"><span class="l">¿Qué quieres calcular?</span><div class="seg" role="tablist">' +
-      '<button type="button" role="tab" data-act="modo" data-v="trunca" aria-selected="' + (f.modo === 'trunca') + '">Vacaciones truncas</button>' +
-      '<button type="button" role="tab" data-act="modo" data-v="goce" aria-selected="' + (f.modo === 'goce') + '">Pago por días a gozar</button></div></div>';
+    let h = commonFields() + '<div class="fld"><span class="l">¿Qué quieres calcular?</span><div class="seg" role="group" aria-label="Qué calcular">' +
+      '<button type="button" data-act="modo" data-v="trunca" aria-pressed="' + (f.modo === 'trunca') + '">Vacaciones truncas</button>' +
+      '<button type="button" data-act="modo" data-v="goce" aria-pressed="' + (f.modo === 'goce') + '">Pago por días a gozar</button></div></div>';
     if (f.modo === 'trunca') {
       h += '<div class="grid2"><div class="fld"><label for="f-meses">Meses (máx. 11)</label><select id="f-meses" data-k="meses">' + monthsSel('meses', 11) + '</select></div>' +
         '<div class="fld"><label for="f-dias">Días adicionales</label><select id="f-dias" data-k="dias">' + monthsSel('dias', 29) + '</select></div></div>';
@@ -918,8 +971,9 @@ function formHTML() {
 }
 
 function compute() {
-  const f = S.f, c = computable(f), rg = REG[f.reg];
+  const f = S.f, rg = REG[f.reg];
   const base = { sueldo: Number(f.sueldo) || 0, asig: !!f.asig, varProm: Number(f.varProm) || 0, reg: f.reg };
+  const c = computable(base);
   if (S.calc === 'grati') {
     const g = gratificacion(Object.assign({ meses: Number(f.meses), eps: !!f.eps }, base));
     const rows = [['Remuneración computable', g.comp], ['Gratificación (' + f.meses + '/6)', g.base], ['Bonificación extraordinaria ' + (f.eps ? '6.75%' : '9%'), g.bon]];
@@ -949,7 +1003,9 @@ function compute() {
       formula: fmt(c) + ' × (' + rg.v + '/30) × (' + f.meses + '/12 + ' + f.dias + '/360)', notes: [] };
   }
   if (S.calc === 'liq') {
-    if (!f.ingreso || !f.cese || f.ingreso > f.cese) return { error: 'La fecha de cese debe ser igual o posterior a la de ingreso.' };
+    const okF = function (d) { return /^\d{4}-\d{2}-\d{2}$/.test(d || '') && d >= '1900-01-01' && d <= '2100-12-31'; };
+    if (!okF(f.ingreso) || !okF(f.cese)) return { error: 'Escribe fechas válidas (año entre 1900 y 2100).' };
+    if (f.ingreso > f.cese) return { error: 'La fecha de cese debe ser igual o posterior a la de ingreso.' };
     const L = liquidacion(Object.assign({ ingreso: f.ingreso, cese: f.cese, vencidos: Number(f.vencidos) || 0, despido: !!f.despido && S.premium, eps: !!f.eps }, base));
     const rows = L.items.map(function (i) { return [i.l, i.v]; });
     const notes = ['Tiempo de servicios: ' + L.years + ' año(s), ' + (L.tenure.m % 12) + ' mes(es) y ' + L.tenure.d + ' día(s).'];
@@ -968,7 +1024,7 @@ function compute() {
   }
   const h = honorarios(Number(f.monto) || 0, !!f.susp);
   const notes = [];
-  if ((Number(f.monto) || 0) <= 3000) notes.push('Hasta S/ 3,000 mensuales no corresponde retención de 4.ª categoría.');
+  if ((Number(f.monto) || 0) <= 1500) notes.push('Hasta S/ 1,500 por recibo no corresponde retención de 4.ª categoría.');
   notes.push('El impuesto anual es una estimación solo con renta de 4.ª categoría (deduce 20% y 7 UIT; UIT ' + fmt(UIT) + ').');
   return { band: { l: 'Neto mensual tras retención', v: h.neto, s: h.ret ? 'Retención del 8%: ' + fmt(h.ret) : 'Sin retención' },
     rows: [['Honorario mensual', Number(f.monto) || 0], ['Retención (8%)', -h.ret], ['Renta neta anual imponible', h.neta], ['Impuesto anual estimado', h.tax], ['Equivale a, por mes', h.mensual]], total: ['Neto mensual', h.neto],
@@ -991,8 +1047,8 @@ function resultHTML() {
 }
 
 function calcView() {
-  let h = '<section class="card" id="formcard"><div class="seg" role="tablist" aria-label="Calculadoras">';
-  CALCS.forEach(function (c) { h += '<button type="button" role="tab" data-act="calc" data-v="' + c.id + '" aria-selected="' + (S.calc === c.id) + '">' + c.n + '</button>'; });
+  let h = '<section class="card" id="formcard"><div class="seg" role="group" aria-label="Calculadoras">';
+  CALCS.forEach(function (c) { h += '<button type="button" data-act="calc" data-v="' + c.id + '" aria-pressed="' + (S.calc === c.id) + '">' + c.n + '</button>'; });
   h += '</div><div id="form" style="display:grid;gap:14px">' + formHTML() + '</div></section>';
   h += '<section class="card" id="res" aria-live="polite">' + resultHTML() + '</section>';
   return h;
@@ -1006,7 +1062,7 @@ function sistLabel(w) {
   const s = w.pension || 'afp';
   if (s === 'onp') return 'ONP 13%';
   if (s === 'none') return 'Sin pensión';
-  return (AFP[w.afp] || AFP.integra).n + (w.comision === 'mixta' ? ' (mixta)' : '');
+  return (hasO(AFP, w.afp) ? AFP[w.afp] : AFP.integra).n + (w.comision === 'mixta' ? ' (mixta)' : '');
 }
 function nvOf(id) { return (S.nov[S.period] || {})[id] || {}; }
 function planBlock() { return planillaMes(S.workers, S.nov[S.period] || {}, S.period); }
@@ -1025,8 +1081,8 @@ function planillaView() {
   pm.rows.forEach(function (r) {
     const flag = Object.keys(nvOf(r.w.id)).some(function (k) { return nvOf(r.w.id)[k] !== '' && Number(nvOf(r.w.id)[k]) !== 0 && k !== 'mesesSem'; });
     h += '<div class="wrow"><div><b>' + esc(r.w.name) + '</b><small>' + sistLabel(r.w) + ' · ' + r.b.dias + ' días' + (flag ? ' · con novedades' : '') + '</small><small>Neto <b class="num" style="display:inline">' + fmt(r.b.neto) + '</b></small></div>' +
-      '<div class="acts"><button type="button" class="btn sm ghost" data-act="nov" data-id="' + r.w.id + '">Novedades</button>' +
-      '<button type="button" class="btn sm ghost" data-act="boleta" data-id="' + r.w.id + '">' + (S.premium ? '' : ICON.lock + ' ') + 'Boleta</button></div></div>';
+      '<div class="acts"><button type="button" class="btn sm ghost" data-act="nov" data-id="' + esc(r.w.id) + '">Novedades</button>' +
+      '<button type="button" class="btn sm ghost" data-act="boleta" data-id="' + esc(r.w.id) + '">' + (S.premium ? '' : ICON.lock + ' ') + 'Boleta</button></div></div>';
   });
   h += '</div>';
   if (pm.excl.length) h += '<div class="note">' + ICON.info + '<span>' + pm.excl.length + ' trabajador(es) en REMYPE no se incluyen: esta planilla aplica al régimen general.</span></div>';
@@ -1056,7 +1112,7 @@ function teamView() {
   S.workers.forEach(function (w) {
     const st = teamStats(w); tg += st.g; tc += st.c;
     h += '<div class="wrow"><div><b>' + esc(w.name) + '</b><small>' + fmt(w.sueldo) + ' · ' + REG[w.reg].n + (w.reg === 'general' ? ' · ' + sistLabel(w) : '') + '</small><small>Grati. semestre ' + fmt(st.g) + ' · CTS semestre ' + fmt(st.c) + '</small></div>' +
-      '<div class="acts"><button type="button" class="btn sm ghost" data-act="use" data-id="' + w.id + '">Usar</button><button type="button" class="btn sm ghost" data-act="editw" data-id="' + w.id + '">Editar</button><button type="button" class="ib" aria-label="Quitar a ' + esc(w.name) + '" data-act="del" data-id="' + w.id + '">' + ICON.close + '</button></div></div>';
+      '<div class="acts"><button type="button" class="btn sm ghost" data-act="use" data-id="' + esc(w.id) + '">Usar</button><button type="button" class="btn sm ghost" data-act="editw" data-id="' + esc(w.id) + '">Editar</button><button type="button" class="ib" aria-label="Quitar a ' + esc(w.name) + '" data-act="del" data-id="' + esc(w.id) + '">' + ICON.close + '</button></div></div>';
   });
   h += '</div><button type="button" class="btn block" data-act="addw">Agregar trabajador</button>' +
     '<p class="fine center">' + (S.premium ? 'Premium: trabajadores ilimitados' : 'Gratis: ' + S.workers.length + ' de 3 trabajadores') + '</p>' +
@@ -1097,8 +1153,8 @@ function accGuide() {
 function guideView() {
   const rows = [['Remuneración Mínima Vital', 'S/ 1,230 (desde el 1 de oct. 2026)'], ['Asignación familiar (10% RMV)', 'S/ ' + ASIG.toFixed(2)], ['UIT 2026', fmt(UIT)],
     ['Gratificaciones', 'Jul. y dic. · 1 sueldo + 9% (EsSalud) o 6.75% (EPS)'], ['CTS', 'Depósito hasta 15 may. y 15 nov. · 1/12 por mes'], ['Vacaciones', '30 días (general) · 15 días (REMYPE)'],
-    ['Retención 4.ª categoría', '8% si el honorario supera S/ 3,000 al mes'], ['Pensión', 'ONP 13% · AFP ≈ 12–13% (varía)'], ['Renta 5.ª categoría', 'Se deducen 7 UIT; tramos 8%, 14%, 17%, 20%, 30%'], ['Despido arbitrario', '1.5 sueldos por año, tope 12 (general)'],
-    ['Planilla: AFP', 'Aporte 10% + prima 1.37% + comisión según AFP · tope referencial S/ ' + AFP_TOPE.toLocaleString('en-US') + ' (SBS, abr.–jun. 2026)'],
+    ['Retención 4.ª categoría', '8% si el recibo por honorarios supera S/ 1,500'], ['Pensión', 'ONP 13% · AFP ≈ 12–13% (varía)'], ['Renta 5.ª categoría', 'Se deducen 7 UIT; tramos 8%, 14%, 17%, 20%, 30%'], ['Despido arbitrario', '1.5 sueldos por año, tope 12 (general)'],
+    ['Planilla: AFP', 'Aporte 10% + prima 1.37% + comisión según AFP · tope solo de la prima S/ ' + AFP_TOPE.toLocaleString('en-US') + ' (valor referencial del 2.º trimestre de 2026; la SBS lo actualiza cada trimestre)'],
     ['Planilla: EsSalud', '9% a cargo del empleador; no aplica a la gratificación'],
     ['Planilla: horas extras', '25% las 2 primeras horas · 35% desde la 3.ª · valor hora = remuneración ÷ 30 ÷ 8'],
     ['Planilla: retención 5.ª', 'Divisores SUNAT: ene–mar 12 · abr 9 · may–jul 8 · ago 5 · set–nov 4 · dic saldo']];
@@ -1114,19 +1170,50 @@ function guideView() {
     '<p class="fine">Confirma montos y fechas en gob.pe/trabajo y sunat.gob.pe antes de pagar o firmar una liquidación.</p></section>';
   return h;
 }
+function fixF() {
+  if (!hasO(REG, S.f.reg)) S.f.reg = 'general';
+  if (!S.premium) S.f.despido = false;   // la casilla es Premium: sin Premium no queda marcada
+  const f = S.f, mx = (S.calc === 'grati' || S.calc === 'cts') ? 6 : 11;
+  if (f.meses !== '' && f.meses != null) f.meses = Math.min(mx, Math.max(0, Math.floor(Number(f.meses) || 0)));
+  if (f.dias !== '' && f.dias != null) f.dias = (S.calc === 'cts' && f.meses >= 6) ? 0 : Math.min(29, Math.max(0, Math.floor(Number(f.dias) || 0)));
+}
 function render() {
+  fixF();
+  if (S.sub) syncSubPrem();
+  let fk = null, fid = null;
+  try { const ae0 = document.activeElement; if (ae0 && ae0.id && /^f-[A-Za-z]+$/.test(ae0.id)) fid = ae0.id; } catch (e) {}
+  try { const ae = document.activeElement; if (ae && ae.dataset && ae.getAttribute && ['tab', 'calc', 'modo'].indexOf(ae.dataset.act) >= 0) fk = (ae.dataset.act || '') + '|' + (ae.dataset.v || ae.dataset.k || ''); } catch (e) {}
   const t = S.tab;
-  let h = '<header class="top"><div class="brand"><svg class="logo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9"/><path d="M9 24V10M9 10h7a4 4 0 010 8H9M17 18l7 6"/></svg><div>Liquida<small>Beneficios laborales Perú</small></div></div>' +
+  let h = '<h1 class="sr">Liquida: calculadora de beneficios laborales en Perú</h1><header class="top"><div class="brand"><svg class="logo" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9"/><path d="M9 24V10M9 10h7a4 4 0 010 8H9M17 18l7 6"/></svg><div>Liquida<small>Beneficios laborales Perú</small></div></div>' +
     '<div class="chips">' + (sbOn() ? '<button type="button" class="pchip" data-act="cuenta" aria-label="Mi cuenta">' + (S.sb.sess ? '<b>Mi cuenta</b>' : 'Entrar') + '</button>' : '') + '<button type="button" class="pchip" data-act="prem" aria-label="Plan">' + (S.premium ? '<b>Premium</b>' : 'Plan <b>Gratis</b>') + '</button></div></header>' +
-    '<nav class="nav" role="tablist">' + [['calc', 'Calcular'], ['team', 'Equipo'], ['plan', 'Planilla'], ['guide', 'Beneficios']].map(function (x) {
-      return '<button type="button" role="tab" data-act="tab" data-v="' + x[0] + '" aria-selected="' + (t === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</nav>';
+    '<nav class="nav" aria-label="Secciones">' + [['calc', 'Calcular'], ['team', 'Equipo'], ['plan', 'Planilla'], ['guide', 'Beneficios']].map(function (x) {
+      return '<button type="button" data-act="tab" data-v="' + x[0] + '" aria-pressed="' + (t === x[0]) + '">' + x[1] + '</button>'; }).join('') + '</nav>';
   h += t === 'calc' ? calcView() : t === 'team' ? teamView() : t === 'plan' ? planillaView() : guideView();
   h += '<footer class="disc"><span><a href="beneficios-sociales-peru.html">Beneficios</a> · <a href="precios.html">Precios</a> · <a href="index.html">Inicio</a></span><span>Cálculos referenciales, no constituyen asesoría legal ni financiera.</span></footer>';
   app.innerHTML = h;
+  if (fid) { try { const el = document.getElementById(fid); if (el && el.focus) el.focus(); } catch (e) {} }
+  if (fk) { try { [].slice.call(app.querySelectorAll('button[data-act][data-v]')).some(function (el) { if ((el.dataset.act || '') + '|' + (el.dataset.v || el.dataset.k || '') === fk) { el.focus(); return true; } return false; }); } catch (e) {} }
 }
 
-function openSheet(html) { sheet.innerHTML = '<div class="sheet" role="dialog" aria-modal="true">' + html + '</div>'; sheet.hidden = false; }
-function closeSheet() { sheet.hidden = true; sheet.innerHTML = ''; }
+let lastFocus = null, lastKey = null;
+function openSheet(html) {
+  try { if (sheet.hidden) { lastFocus = document.activeElement; lastKey = lastFocus && lastFocus.dataset ? [lastFocus.dataset.act, lastFocus.dataset.id, lastFocus.dataset.v].join('|') : null; } } catch (e) {}
+  sheet.innerHTML = '<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-title" tabindex="-1">' + html + '</div>';
+  sheet.hidden = false;
+  try {
+    const h2 = sheet.querySelector('h2'); if (h2) h2.id = 'sh-title';
+    document.body.style.overflow = 'hidden';
+    const first = sheet.querySelector('input,select,textarea,button,a[href]');
+    (first || sheet.querySelector('.sheet')).focus();
+  } catch (e) {}
+}
+function closeSheet() { sheet.hidden = true; sheet.innerHTML = ''; S.sb.open = false; S.sb.confirmWipe = false; try {
+    document.body.style.overflow = '';
+    if (lastFocus && lastFocus.focus && document.contains(lastFocus)) lastFocus.focus();
+    else if (lastKey) { const els = [].slice.call(app.querySelectorAll('button[data-act]')), el = els.filter(function (x) { return [x.dataset.act, x.dataset.id, x.dataset.v].join('|') === lastKey; })[0] || els.filter(function (x) { return x.dataset.act === lastKey.split('|')[0]; })[0]; if (el) el.focus(); }
+  } catch (e) {}
+  lastFocus = null; lastKey = null;
+}
 function dmy(s) { const p = String(s).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : String(s); }
 function licMessage(r) {
   if (r.reason === 'expired') return 'Este código venció el ' + dmy(r.exp) + '. Pide uno nuevo para seguir con Premium.';
@@ -1146,29 +1233,67 @@ function yapeFmt(n) { const m = /^51(\d{3})(\d{3})(\d{3})$/.exec(n); return m ? 
 function finishPrem() { if (licOn()) S.premium = !!S.lic || !!S.subPrem; }
 function calcUrl() { try { return location.href.replace(/[?#].*$/, ''); } catch (e) { return ''; } }
 function sbSave() { try { if (S.sb.sess) localStorage.setItem(SBKEY, JSON.stringify(S.sb.sess)); else localStorage.removeItem(SBKEY); } catch (e) {} }
-function sbDrop() { S.sb.sess = null; S.sub = null; S.subPrem = false; sbSave(); finishPrem(); }
+function sbStored() { try { const j = JSON.parse(localStorage.getItem(SBKEY) || 'null'); return j && typeof j === 'object' && typeof j.refresh_token === 'string' && typeof j.access_token === 'string' && typeof j.uid === 'string' && isFinite(j.exp) ? j : null; } catch (e) { return null; } }
+// Sincroniza varias pestañas: si en otra se cierra la sesión (o se renueva), esta lo refleja.
+window.addEventListener('storage', function (e) {
+  if (e.key !== SBKEY) return;
+  const n = sbStored();
+  if (!n) { if (S.sb.sess) { S.sb.sess = null; S.sub = null; S.subPrem = false; finishPrem(); render(); } }
+  else if (S.sb.sess && S.sb.sess.uid === n.uid) S.sb.sess = n;
+  else if (S.sb.sess) { S.sb.sess = null; S.sub = null; S.subPrem = false; finishPrem(); render(); }   // en otra pestaña entró otra cuenta: aquí se sale sin tocar lo guardado
+});
+function sbDrop() {
+  const uid = S.sb.sess && S.sb.sess.uid;
+  S.sb.sess = null; S.sub = null; S.subPrem = false; S.sb.subErr = false; S.sb.confirmLoad = false; S.sb.confirmWipe = false;
+  const o = sbStored();
+  if (uid && (!o || o.uid === uid)) sbSave();   // si otra pestaña guardó la sesión de otra cuenta, no se borra
+  finishPrem();
+}
 async function sbToken() {
   const ss = S.sb.sess; if (!ss) return null;
   if (ss.exp - 60 > Math.floor(Date.now() / 1000)) return ss.access_token;
-  try { const n = sbSession(await sbRefresh(SBC, fetch, ss.refresh_token), Date.now()); if (!n) throw new Error('x'); S.sb.sess = n; sbSave(); return n.access_token; }
-  catch (e) { if (e.status === 400 || e.status === 401 || e.status === 403) sbDrop(); return null; }
+  // otra pestaña pudo renovar ya el acceso (el refresh token se rota): se adopta su sesión en vez de gastar el token viejo
+  const otra = sbStored();
+  if (otra && otra.uid === ss.uid && otra.refresh_token !== ss.refresh_token && otra.exp - 60 > Math.floor(Date.now() / 1000)) { S.sb.sess = otra; return otra.access_token; }
+  const igual = function () { return !!S.sb.sess && S.sb.sess.uid === ss.uid; };   // la cuenta pudo cambiar mientras se esperaba la respuesta
+  try { const n = sbSession(await sbRefresh(SBC, fetch, ss.refresh_token), Date.now()); if (!n) throw new Error('x'); if (!igual()) return null; S.sb.sess = n; sbSave(); return n.access_token; }
+  catch (e) {
+    if (!igual()) return null;
+    if (e.status === 400 || e.status === 401 || e.status === 403) {
+      const o2 = sbStored();                       // si otra pestaña guardó una sesión distinta y válida, no se borra
+      if (o2 && o2.uid === ss.uid && o2.refresh_token !== ss.refresh_token) { S.sb.sess = o2; return o2.exp - 60 > Math.floor(Date.now() / 1000) ? o2.access_token : null; }
+      sbDrop();
+    }
+    return null;
+  }   // red o 5xx: se conserva la sesión
 }
 // La suscripción se confirma con el servidor en cada carga; sin internet no se concede Premium por cuenta.
+function syncSubPrem() { S.subPrem = !!S.sub && sbSubActiva(S.sub, iso(new Date())); finishPrem(); }
 async function sbRefreshSub() {
-  const tok = await sbToken(); if (!tok || !S.sb.sess) return;
-  try { S.sub = await sbSuscripcion(SBC, fetch, tok, S.sb.sess.email); S.subPrem = sbSubActiva(S.sub, iso(new Date())); }
-  catch (e) { if (e.status === 401 || e.status === 403) sbDrop(); }
-  finishPrem();
+  const ses0 = S.sb.sess; if (!ses0) return;
+  const uid = ses0.uid, mismo = function () { return !!S.sb.sess && S.sb.sess.uid === uid; };
+  const tok = await sbToken();
+  if (!tok) { if (mismo()) { S.sub = null; S.sb.subErr = true; syncSubPrem(); } return; }   // sin red o servidor caído (si la sesión fue rechazada, sbDrop ya la quitó)
+  if (!mismo()) return;
+  try {
+    const sub = await sbSuscripcion(SBC, fetch, tok, S.sb.sess.email);
+    if (!mismo()) return;                 // la sesión cambió mientras esperábamos: se descarta la respuesta
+    S.sub = sub; S.sb.subErr = false;
+  } catch (e) {
+    if (!mismo()) return;
+    if (e.status === 401 || e.status === 403) sbDrop(); else { S.sub = null; S.sb.subErr = true; }
+  }
+  syncSubPrem();
 }
 function mailOk(v) { return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(v || '').trim()); }
 function openCuenta() {
-  const B = S.sb;
+  const B = S.sb; B.open = true;
   let h = '<div class="sh-top"><h2>Mi cuenta</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>';
   const msg = B.msg ? '<div class="note" role="alert">' + ICON.info + '<span>' + esc(B.msg) + '</span></div>' : '';
   if (!B.sess) {
     const reg = B.mode === 'signup';
     h += '<div class="rg" role="group" aria-label="Modo"><button type="button" data-act="sb-mode" data-v="login" aria-pressed="' + !reg + '">Entrar</button><button type="button" data-act="sb-mode" data-v="signup" aria-pressed="' + reg + '">Crear cuenta</button></div>' +
-      '<div class="fld"><label for="sb-email">Correo</label><input id="sb-email" type="email" autocomplete="email" inputmode="email" maxlength="120"></div>' +
+      '<div class="fld"><label for="sb-email">Correo</label><input id="sb-email" type="email" autocomplete="email" inputmode="email" maxlength="120" value="' + esc(B.email || '') + '"></div>' +
       '<div class="fld"><label for="sb-pass">Contraseña' + (reg ? ' (mínimo 8 caracteres)' : '') + '</label><input id="sb-pass" type="password" autocomplete="' + (reg ? 'new-password' : 'current-password') + '" maxlength="72"></div>' +
       '<button type="button" class="btn block" data-act="' + (reg ? 'sb-signup' : 'sb-login') + '"' + (B.busy ? ' disabled' : '') + '>' + (B.busy ? 'Un momento…' : reg ? 'Crear mi cuenta' : 'Entrar') + '</button>' +
       (reg ? '' : '<button type="button" class="btn ghost block" data-act="sb-reset">Olvidé mi contraseña</button>') + msg +
@@ -1177,16 +1302,19 @@ function openCuenta() {
     const sb = S.sub;
     const wa = LIC.whatsapp && /^\d{8,15}$/.test(LIC.whatsapp) ? ' <a href="https://wa.me/' + LIC.whatsapp + '?text=' + encodeURIComponent('Hola, ya pagué Liquida Premium. Mi correo es ' + B.sess.email) + '" target="_blank" rel="noopener noreferrer">Escríbenos por WhatsApp</a>' : '';
     h += '<div class="note">' + ICON.check + '<span>Sesión iniciada como <b>' + esc(B.sess.email) + '</b>.</span></div>' +
-      '<div class="note">' + ICON.info + '<span>' + (S.subPrem ? 'Suscripción activa: plan <b>' + esc(sb.plan) + '</b>, hasta el <b>' + dmy(sb.vence) + '</b>.' : sb ? 'Tu suscripción venció el <b>' + dmy(sb.vence) + '</b>. Renuévala para seguir con Premium.' + wa : 'No hay una suscripción asociada a este correo. Si ya pagaste, avísanos con este correo.' + wa) + '</span></div>' +
+      '<div class="note">' + ICON.info + '<span>' + (B.subErr ? 'No pudimos consultar tu suscripción. Revisa tu conexión y toca «Revisar de nuevo».' : S.subPrem ? 'Suscripción activa: plan <b>' + esc(sb.plan) + '</b>, hasta el <b>' + dmy(sb.vence) + '</b>.' : sb ? 'Tu suscripción venció el <b>' + dmy(sb.vence) + '</b>. Renuévala para seguir con Premium.' + wa : 'No hay una suscripción asociada a este correo. Si ya pagaste, avísanos con este correo.' + wa) + '</span></div>' +
       '<h3 class="gt">Mis datos en la nube</h3><p class="fine">Guarda una copia de tus trabajadores, novedades y datos del empleador en tu cuenta. Solo tú puedes verla. No se guardan las firmas de boletas ni las llaves.</p>' +
       '<div class="acts-col"><button type="button" class="btn block" data-act="sb-save"' + (B.busy ? ' disabled' : '') + '>Guardar mis datos en la nube</button>' +
       (B.confirmLoad ? '<div class="note">' + ICON.info + '<span>Esto reemplaza los trabajadores y novedades de este navegador por los de la nube.</span></div><button type="button" class="btn block" data-act="sb-load-ok">Sí, reemplazar con los datos de la nube</button><button type="button" class="btn ghost block" data-act="sb-load-no">Cancelar</button>'
         : '<button type="button" class="btn ghost block" data-act="sb-load"' + (B.busy ? ' disabled' : '') + '>Traer mis datos de la nube</button>') + '</div>' + msg +
-      '<button type="button" class="btn ghost block" data-act="sb-out">Cerrar sesión</button>';
+      (B.subErr ? '<button type="button" class="btn ghost block" data-act="sb-recheck">Revisar de nuevo</button>' : '') +
+      '<button type="button" class="btn ghost block" data-act="sb-out">Cerrar sesión</button>' +
+      (B.confirmWipe ? '<div class="note">' + ICON.info + '<span>Se borran de este equipo los trabajadores, novedades, firmas y códigos guardados. Tu cuenta y la copia en la nube no se tocan.</span></div><button type="button" class="btn block" data-act="sb-wipe-ok">Sí, cerrar sesión y borrar</button><button type="button" class="btn ghost block" data-act="sb-wipe-no">Cancelar</button>' : '<button type="button" class="btn ghost block" data-act="sb-wipe">Cerrar sesión y borrar datos de este equipo</button>');
   }
   openSheet(h);
 }
 function openNuevaClave() {
+  S.sb.open = false;
   openSheet('<div class="sh-top"><h2>Nueva contraseña</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>' +
     '<div class="fld"><label for="sb-new">Escribe tu nueva contraseña (mínimo 8 caracteres)</label><input id="sb-new" type="password" autocomplete="new-password" maxlength="72"></div>' +
     '<button type="button" class="btn block" data-act="sb-newpass">Guardar contraseña</button>' + (S.sb.msg ? '<div class="note" role="alert">' + ICON.info + '<span>' + esc(S.sb.msg) + '</span></div>' : ''));
@@ -1197,7 +1325,7 @@ async function sbAct(a) {
   if (B.busy) return;
   try {
     if (a === 'sb-login' || a === 'sb-signup') {
-      const email = val('sb-email').trim(), pass = val('sb-pass');
+      const email = val('sb-email').trim(), pass = val('sb-pass'); B.email = email;
       if (!mailOk(email)) { B.msg = 'Escribe un correo válido.'; B.ok = false; return openCuenta(); }
       if (pass.length < 8) { B.msg = 'La contraseña debe tener al menos 8 caracteres.'; B.ok = false; return openCuenta(); }
       B.busy = true; B.msg = ''; openCuenta();
@@ -1212,7 +1340,7 @@ async function sbAct(a) {
         B.sess = sess; sbSave(); B.msg = ''; await sbRefreshSub(); toast('Sesión iniciada');
       }
     } else if (a === 'sb-reset') {
-      const email = val('sb-email').trim();
+      const email = val('sb-email').trim(); B.email = email;
       if (!mailOk(email)) { B.msg = 'Escribe tu correo arriba y vuelve a tocar «Olvidé mi contraseña».'; return openCuenta(); }
       B.busy = true; await sbRecover(SBC, fetch, email, calcUrl()); B.msg = 'Si ese correo tiene cuenta, te enviamos un enlace para crear una contraseña nueva.'; B.ok = true;
     } else if (a === 'sb-save') {
@@ -1220,10 +1348,12 @@ async function sbAct(a) {
       B.busy = true; openCuenta(); await sbGuardar(SBC, fetch, tok, B.sess.uid, sbEstado()); B.msg = 'Listo: tus datos quedaron guardados en la nube.'; B.ok = true;
     } else if (a === 'sb-load-ok') {
       const tok = await sbToken(); if (!tok) { B.msg = 'Tu sesión venció. Entra de nuevo.'; B.confirmLoad = false; return openCuenta(); }
+      const uid0 = B.sess && B.sess.uid;
       B.busy = true; const r = await sbTraer(SBC, fetch, tok); B.confirmLoad = false;
+      if (!B.sess || B.sess.uid !== uid0) { B.busy = false; return; }   // la sesión cambió (cerró o borró) mientras esperábamos
       if (!r) B.msg = 'Todavía no hay datos guardados en tu cuenta.';
       else if (!sbEstadoValido(r.estado)) B.msg = 'Los datos de la nube no tienen el formato esperado.';
-      else { S.workers = r.estado.workers; S.nov = r.estado.nov; S.empresa = { name: String(r.estado.empresa.name || ''), ruc: String(r.estado.empresa.ruc || '') }; save(); render(); B.msg = 'Listo: se cargaron tus datos de la nube.'; B.ok = true; }
+      else { S.workers = cleanWs(r.estado.workers); S.nov = cleanNov(r.estado.nov); S.empresa = { name: String(r.estado.empresa.name || ''), ruc: String(r.estado.empresa.ruc || '') }; save(); render(); B.msg = 'Listo: se cargaron tus datos de la nube.'; B.ok = true; }
     } else if (a === 'sb-newpass') {
       const np = val('sb-new');
       if (np.length < 8) { B.msg = 'La contraseña debe tener al menos 8 caracteres.'; return openNuevaClave(); }
@@ -1231,7 +1361,9 @@ async function sbAct(a) {
       B.busy = true; await sbUpdatePass(SBC, fetch, tok, np); B.busy = false; B.recovery = false; B.msg = ''; toast('Contraseña actualizada'); return openCuenta();
     }
   } catch (e) { B.msg = sbMsg(e); B.ok = false; if (e && (e.status === 401 || e.status === 403) && B.sess) { B.msg = 'Tu sesión venció. Entra de nuevo.'; sbDrop(); } }
-  B.busy = false; openCuenta(); render();
+  B.busy = false;
+  if (a === 'sb-newpass' && B.msg && !sheet.hidden) openNuevaClave(); else if (B.open && !sheet.hidden) openCuenta();
+  render();
 }
 function openPremium() {
   const head = '<div class="sh-top"><h2>Liquida Premium</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div>';
@@ -1335,7 +1467,7 @@ async function firmarBoleta(w, b) {
   return { url: firmaUrl() + '#' + firmaToken(data, b64u(sig), K.pub), huella: K.pub.x.slice(0, 8), ts: ts };
 }
 function firmasLoad() { try { return JSON.parse(localStorage.getItem(FKEY)) || {}; } catch (e) { return {}; } }
-function firmaTrab(id) { const v = firmasLoad()[id + '|' + S.period]; return typeof v === 'string' && v.indexOf('data:image/png;base64,') === 0 ? v : ''; }
+function firmaTrab(id) { const v = firmasLoad()[id + '|' + S.period]; return typeof v === 'string' && /^data:image\/png;base64,[A-Za-z0-9+\/=]+$/.test(v) ? v : ''; }
 function firmaTrabSet(id, url) { const f = firmasLoad(), k = id + '|' + S.period; if (url) f[k] = url; else delete f[k]; try { localStorage.setItem(FKEY, JSON.stringify(f)); } catch (e) {} }
 function openFirmaPad(id) {
   const w = findW(id); if (!w) return;
@@ -1405,10 +1537,12 @@ app.addEventListener('input', function (e) {
   if (t.type === 'checkbox') {
     if (k === 'despido' && t.checked && !S.premium) { t.checked = false; openPremium(); return; }
     S.f[k] = t.checked;
-  } else if (t.type === 'number') S.f[k] = t.value === '' ? '' : Number(t.value);
+  } else if (t.type === 'number') S.f[k] = t.value === '' ? '' : Math.min(k === 'afpPct' ? 100 : 1e9, Math.max(0, Number(t.value) || 0));
   else S.f[k] = t.value;
   if (k === 'gratiLast' && t.value === '') S.f[k] = '';
-  save(); setRes();
+  save();
+  // los selectores que cambian otros campos (p. ej. meses de CTS → días) vuelven a dibujar el formulario
+  if (t.dataset.re || (k === 'meses' && S.calc === 'cts')) render(); else setRes();
 });
 app.addEventListener('change', function (e) {
   if (e.target.dataset.actChange === 'pick') {
@@ -1459,7 +1593,7 @@ function onClick(e) {
     const id = b.dataset.id, g = function (k) { const el = document.getElementById('nv-' + k); return el ? el.value : ''; };
     const o = {};
     ['faltas', 'tardanza', 'he25', 'he35', 'bonos', 'otros', 'mesesSem', 'remPrev', 'retPrev'].forEach(function (k) {
-      const val = g(k); if (val !== '') o[k] = Number(val);
+      const val = g(k); if (val !== '' && isFinite(Number(val))) o[k] = Math.min(k === 'faltas' ? 30 : k === 'mesesSem' ? 6 : 1e9, Math.max(0, Number(val)));
     });
     if (o.faltas > 30) o.faltas = 30;
     if (!S.nov[S.period]) S.nov[S.period] = {};
@@ -1471,7 +1605,19 @@ function onClick(e) {
   else if (a === 'prem') openPremium();
   else if (a === 'cuenta') { if (sbOn()) { S.sb.msg = ''; S.sb.confirmLoad = false; openCuenta(); } }
   else if (a === 'sb-mode') { S.sb.mode = v === 'signup' ? 'signup' : 'login'; S.sb.msg = ''; openCuenta(); }
-  else if (a === 'sb-out') { const tk = S.sb.sess && S.sb.sess.access_token; if (tk) sbSignOut(SBC, fetch, tk); sbDrop(); S.sb.msg = ''; closeSheet(); render(); toast('Sesión cerrada'); }
+  else if (a === 'sb-recheck') { S.sb.subErr = false; sbRefreshSub().then(function () { if (S.sb.open) openCuenta(); render(); }); }
+  else if (a === 'sb-wipe') { S.sb.confirmWipe = true; openCuenta(); }
+  else if (a === 'sb-wipe-no') { S.sb.confirmWipe = false; openCuenta(); }
+  else if (a === 'sb-wipe-ok') {
+    sbRevoke(S.sb.sess);
+    sbDrop();
+    try { localStorage.removeItem(KEY); localStorage.removeItem(SKEY); localStorage.removeItem(FKEY); } catch (e) {}
+    S.workers = []; S.nov = {}; S.empresa = { name: '', ruc: '' }; S.licCode = ''; S.lic = null; S.licInfo = null; finishPrem();
+    closeSheet(); render(); toast('Sesión cerrada y datos borrados de este equipo');
+  }
+  else if (a === 'sb-adopt') { sbAdopt(); }
+  else if (a === 'sb-adopt-no') { S.sb.pending = null; closeSheet(); }
+  else if (a === 'sb-out') { sbRevoke(S.sb.sess); sbDrop(); S.sb.msg = ''; closeSheet(); render(); toast('Sesión cerrada'); }
   else if (a === 'sb-load') { S.sb.confirmLoad = true; S.sb.msg = ''; openCuenta(); }
   else if (a === 'sb-load-no') { S.sb.confirmLoad = false; openCuenta(); }
   else if (a === 'sb-login' || a === 'sb-signup' || a === 'sb-reset' || a === 'sb-save' || a === 'sb-load-ok' || a === 'sb-newpass') sbAct(a);
@@ -1498,7 +1644,7 @@ function onClick(e) {
   else if (a === 'savew') {
     const name = document.getElementById('n-name').value.trim();
     if (!name) { toast('Escribe un nombre'); return; }
-    const data = { name: name, dni: document.getElementById('n-dni').value.trim(), sueldo: Number(document.getElementById('n-sueldo').value) || 0,
+    const data = { name: name, dni: document.getElementById('n-dni').value.trim(), sueldo: Math.min(1e9, Math.max(0, Number(document.getElementById('n-sueldo').value) || 0)),
       asig: document.getElementById('n-asig').checked, reg: document.getElementById('n-reg').value,
       pension: document.getElementById('n-pension').value, afp: document.getElementById('n-afp').value, comision: document.getElementById('n-com').value,
       eps: document.getElementById('n-eps').checked };
@@ -1506,7 +1652,11 @@ function onClick(e) {
     if (cur) Object.assign(cur, data); else S.workers.push(Object.assign({ id: 'w' + Date.now().toString(36) }, data));
     save(); closeSheet(); render();
   }
-  else if (a === 'del') { S.workers = S.workers.filter(function (w) { return w.id !== b.dataset.id; }); Object.keys(S.nov).forEach(function (p) { delete S.nov[p][b.dataset.id]; }); save(); render(); }
+  else if (a === 'del') {
+    const w = findW(b.dataset.id); if (!w) return;
+    openSheet('<div class="sh-top"><h2>¿Eliminar a ' + esc(w.name) + '?</h2><button type="button" class="ib" aria-label="Cerrar" data-act="close">' + ICON.close + '</button></div><p class="sub">Se borran también sus novedades. No se puede deshacer.</p><button type="button" class="btn block" data-act="del-ok" data-id="' + esc(w.id) + '">Sí, eliminar</button><button type="button" class="btn ghost block" data-act="close">Cancelar</button>');
+  }
+  else if (a === 'del-ok') { closeSheet(); S.workers = S.workers.filter(function (w) { return w.id !== b.dataset.id; }); Object.keys(S.nov).forEach(function (p) { if (S.nov[p]) delete S.nov[p][b.dataset.id]; }); save(); render(); }
   else if (a === 'use') {
     const w = S.workers.filter(function (x) { return x.id === b.dataset.id; })[0];
     if (w) { S.f.sueldo = w.sueldo; S.f.asig = w.asig; S.f.reg = w.reg; S.tab = 'calc'; save(); render(); window.scrollTo(0, 0); }
@@ -1517,15 +1667,28 @@ sheet.addEventListener('click', function (e) { if (e.target === sheet) closeShee
 sheet.addEventListener('change', function (e) {
   if (e.target.id === 'n-pension') { const bx = document.getElementById('n-afpbox'); if (bx) bx.hidden = e.target.value !== 'afp'; }
 });
-document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !sheet.hidden) closeSheet(); });
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && !sheet.hidden) { closeSheet(); return; }
+  if (e.key === 'Tab' && !sheet.hidden) {
+    try {
+      const f = [].slice.call(sheet.querySelectorAll('input,select,textarea,button,a[href]')).filter(function (x) { return !x.disabled; });
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (!sheet.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+      else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    } catch (x) {}
+  }
+});
+
 (function () {
   try {
     location.hash.replace(/^#/, '').split('&').forEach(function (kv) {
       const p = kv.split('='), k = p[0], v = decodeURIComponent(p[1] || '');
       if (k === 'calc' && CALCS.some(function (c) { return c.id === v; })) { S.calc = v; S.tab = 'calc'; }
       else if (k === 'tab' && ['calc', 'team', 'plan', 'guide'].indexOf(v) >= 0) S.tab = v;
-      else if (['sueldo', 'varProm', 'meses', 'dias', 'monto'].indexOf(k) >= 0 && v !== '' && !isNaN(v)) S.f[k] = Number(v);
-      else if (k === 'reg' && REG[v]) S.f.reg = v;
+      else if (['sueldo', 'varProm', 'meses', 'dias', 'monto'].indexOf(k) >= 0 && v !== '' && !isNaN(v)) S.f[k] = Math.min(k === 'meses' ? 12 : k === 'dias' ? 29 : 1e7, Math.max(0, Number(v)));
+      else if (k === 'reg' && hasO(REG, v)) S.f.reg = v;
     });
   } catch (e) {}
 })();
@@ -1539,27 +1702,38 @@ if (licOn() && S.licCode) {
     render();
   });
 }
-// Cuentas: restaura la sesión, procesa el enlace del correo (confirmación o nueva contraseña) y confirma la suscripción con el servidor.
+// Cuentas: restaura la sesión, detecta el enlace del correo (confirmación o nueva contraseña) y confirma la suscripción con el servidor.
+async function sbAdopt() {
+  const p = S.sb.pending; S.sb.pending = null; if (!p) return;
+  S.sb.sess = { access_token: p.access_token, refresh_token: p.refresh_token, exp: p.exp, uid: p.uid, email: p.email }; sbSave();
+  if (p.recovery) { openNuevaClave(); await sbRefreshSub(); render(); return; }
+  closeSheet(); await sbRefreshSub(); render(); toast('Sesión iniciada');
+}
 (async function sbBoot() {
   if (!sbOn()) return;
   try {
     const j = JSON.parse(localStorage.getItem(SBKEY) || 'null');
     if (j && j.access_token && j.refresh_token && j.uid && j.email) S.sb.sess = j;
   } catch (e) {}
+  let link = null;
   try {
     const o = {};
     String(location.hash || '').replace(/^#/, '').split('&').forEach(function (kv) { const q = kv.split('='); if (q[0]) o[q[0]] = decodeURIComponent(q[1] || ''); });
-    if (o.access_token && o.refresh_token) {
-      const u = await sbCall(SBC, fetch, 'GET', '/auth/v1/user', undefined, o.access_token);
-      S.sb.sess = { access_token: o.access_token, refresh_token: o.refresh_token, exp: Math.floor(Date.now() / 1000) + (Number(o.expires_in) || 3600), uid: u.id, email: String(u.email || '') };
-      sbSave();
-      if (o.type === 'recovery') S.sb.recovery = true;
-      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
-    }
+    if (o.access_token && o.refresh_token) link = o;
+    if (link) { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }   // los tokens no se quedan en la barra ni en el historial
   } catch (e) {}
   if (S.sb.sess) await sbRefreshSub();
   render();
-  if (S.sb.recovery && S.sb.sess) openNuevaClave();
+  if (link) {
+    // Un enlace con tokens podría haber sido armado por otra persona: se muestra con qué cuenta se entraría y se pide confirmar.
+    try {
+      const u = await sbCall(SBC, fetch, 'GET', '/auth/v1/user', undefined, link.access_token);
+      S.sb.pending = { access_token: link.access_token, refresh_token: link.refresh_token, exp: Math.floor(Date.now() / 1000) + (Number(link.expires_in) || 3600), uid: u.id, email: String(u.email || ''), recovery: link.type === 'recovery' };
+      openSheet('<div class="sh-top"><h2>Enlace de acceso</h2><button type="button" class="ib" aria-label="Cerrar" data-act="sb-adopt-no">' + ICON.close + '</button></div>' +
+        '<div class="note">' + ICON.info + '<span>Este enlace entra a la cuenta <b>' + esc(S.sb.pending.email) + '</b>' + (S.sb.pending.recovery ? ' para cambiar su contraseña' : '') + '. Acepta solo si tú pediste este correo.</span></div>' +
+        '<button type="button" class="btn block" data-act="sb-adopt">Sí, entrar con esa cuenta</button><button type="button" class="btn ghost block" data-act="sb-adopt-no">No, cancelar</button>');
+    } catch (e) {}
+  }
 })();
 
 </script>

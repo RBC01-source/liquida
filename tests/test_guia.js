@@ -1,0 +1,40 @@
+const fs=require('fs');
+let src=fs.readFileSync(process.argv[2],'utf8');
+// reutiliza el arnés de test_ui.js: ejecuta hasta el boot y abre la pestaña Guía
+const h=fs.readFileSync(__dirname+'/test_ui.js','utf8');
+const harness=h.slice(0,h.indexOf('const store = {};'));
+const body=`
+const store={}; const E=boot(store); const app=E.fixed.app;
+ok('Pestaña Beneficios en el menú', /data-v="guide"[^>]*>Beneficios</.test(app.innerHTML));
+E.click('tab',{v:'guide'});
+ok('Beneficios: título, selector de régimen y 4 grupos', app.innerHTML.includes('<h2>Beneficios sociales</h2>') && (app.innerHTML.match(/data-act="reg-ben"/g)||[]).length===3 && (app.innerHTML.match(/<h3 class="gt"/g)||[]).length===4);
+ok('Beneficios: 12 desplegables + reglas, solo el primero abierto', (app.innerHTML.match(/<details class="acc"/g)||[]).length===13 && (app.innerHTML.match(/<details class="acc" id="b-\\w+" open>/g)||[]).length===1);
+ok('Beneficios: franja de próximas fechas', /class="prox"[^>]*><div class="pl"><b>(CTS|Gratificación)/.test(app.innerHTML));
+ok('Régimen general por defecto', app.innerHTML.includes('Un sueldo en julio y otro en diciembre') && app.innerHTML.includes('aria-pressed="true">General<'));
+E.click('reg-ben',{v:'pequena'});
+ok('Pequeña empresa: cambia el texto y el régimen de la calculadora', E.api.S.f.reg==='pequena' && app.innerHTML.includes('Medio sueldo en julio') && !app.innerHTML.includes('Un sueldo en julio y otro en diciembre'));
+E.click('reg-ben',{v:'micro'});
+ok('Microempresa: sin gratificación ni CTS y con aviso', E.api.S.f.reg==='micro' && app.innerHTML.includes('No tiene derecho a CTS.') && app.innerHTML.includes('no paga gratificaciones ni CTS'));
+E.click('reg-ben',{v:'inventado'});
+ok('Régimen inválido se ignora', E.api.S.f.reg==='micro');
+ok('Cada beneficio tiene ícono y botón de calcular donde corresponde', (app.innerHTML.match(/<svg class="bi"/g)||[]).length===12 && (app.innerHTML.match(/class="btn sm go"/g)||[]).length===7);
+E.click('reg-ben',{v:'general'});
+E.click('ir-calc',{v:'cts'});
+ok('Botón calcular abre la calculadora correcta', E.api.S.tab==='calc' && E.api.S.calc==='cts');
+E.click('ir-calc',{v:'inventado'});
+ok('Calculadora inválida se ignora', E.api.S.calc==='cts');
+E.click('tab',{v:'guide'});
+E.click('ben-all');
+ok('Abrir todos', E.api.S.benAll===true && (app.innerHTML.match(/<details class="acc" id="b-\\w+" open>/g)||[]).length===12 && app.innerHTML.includes('Cerrar todos'));
+E.click('ben-all');
+ok('Cerrar todos', E.api.S.benAll===false && app.innerHTML.includes('Abrir todos'));
+const box={innerHTML:''}; E.fields['ben-list']=box;
+E.input({benq:'1'},'cts');
+ok('Buscar «cts» filtra la lista sin volver a dibujar la pantalla', box.innerHTML.includes('id="b-cts"') && !box.innerHTML.includes('id="b-vac"') && E.api.S.benQ==='cts');
+E.input({benq:'qqq'},'qqq'); ok('Sin resultados', box.innerHTML.includes('No encontré beneficios'));
+E.input({benq:'1'},''); ok('Búsqueda vacía muestra todo', (box.innerHTML.match(/<details/g)||[]).length===12);
+ok('Reglas de Liquida siguen en un desplegable', E.fixed.app.innerHTML.includes('Reglas y cifras que usa Liquida') && app.innerHTML.includes('Remuneración Mínima Vital'));
+ok('Enlace a la guía completa', app.innerHTML.includes('href="beneficios-sociales-peru.html"'));
+console.log('\\n'+(n-fail)+'/'+n+' comprobaciones correctas'); process.exit(fail?1:0);`;
+const tmp=require('os').tmpdir()+'/liquida_guia_run.js'; fs.writeFileSync(tmp,harness+body);
+try{ process.stdout.write(require('child_process').execFileSync('node',[tmp,process.argv[2]],{encoding:'utf8'})); }catch(e){ process.stdout.write(String(e.stdout||'')+String(e.stderr||'')); process.exit(1); }
