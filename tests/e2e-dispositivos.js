@@ -44,6 +44,8 @@ async function correr(nombre) {
   const br = await chromium.launch();
   const ctx = await br.newContext({ ...d, locale: 'es-PE', timezoneId: 'America/Lima' });
   const page = await ctx.newPage(); page.setDefaultTimeout(4000);
+  // tipografía ancha de respaldo (como en equipos sin las fuentes de Google): los textos no deben desbordar la pantalla
+  await page.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = '*{font-family:"DejaVu Sans",Verdana,sans-serif !important}'; document.head.appendChild(st); }); });
   const errores = [];
   page.on('pageerror', e => errores.push('pageerror: ' + e.message));
   page.on('console', m => { if (m.type() === 'error' && !/favicon|net::ERR|Failed to load resource|fonts\.g/i.test(m.text())) errores.push('console: ' + m.text()); });
